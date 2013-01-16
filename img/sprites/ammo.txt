@@ -1,0 +1,14 @@
+ammo1
+0 0 8 6 1
+ammo2
+0 9 9 18 1
+ammo3
+0 19 9 28 1
+ammox
+119 1 127 9 1
+ammobig
+0 53 120 62 10
+secondary1
+10 1 18 16 1
+ammo1explosion
+2 34 82 52 5

@@ -1,0 +1,8 @@
+pointer
+0 0 32 32 1
+health_bar
+32 6 157 26 1
+health_bar_step
+158 9 163 23 1
+live
+166 5 188 27 1     
