@@ -419,8 +419,8 @@ var SB = {
 		game.ent.pg = new Engine.GuiProgress("progress", "progressStep", game);
 		game.ent.pg.x(10).y(560);
 		game.ent.pg.value = 100;
-		game.ent.pg.on('update', function() {
-			this.value = SB.player.hero.health / SB.player.hero.maxHealth * 100;
+		game.ent.pg.on('update', function(pg) {
+			pg.value = SB.player.hero.health / SB.player.hero.maxHealth * 100;
 		});
 		SB.gui.addItem(game.ent.pg, "main");
 	},

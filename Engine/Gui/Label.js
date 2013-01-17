@@ -18,47 +18,28 @@ Engine.GuiLabel = function(gameObject)
 	this.type = 0;
 	this.visible = true;
 
-	// game object
-	this._world = gameObject;
-
-	// render pipe
-	this._rp = this._world && this._world.rp;
-
 	Engine.ObjectHelperMixin(this);
-}
+	this.inherit(new Engine.Entity(null, gameObject),
+		{'public': ['addToRenderPipe', 'removeFromRenderPipe', 'update']});
 
 
-//
-// Some borrowed methods from Engine.Entity
-//
-Engine.GuiLabel.prototype.addToRenderPipe = Engine.Entity.prototype.addToRenderPipe;
-Engine.GuiLabel.prototype.removeFromRenderPipe = Engine.Entity.prototype.removeFromRenderPipe;
+	//
+	// render callback
+	//
+	this.render = function()
+	{
+		if (!this.visible) {
+			return false;
+		}
 
-
-// - C -
-// update callback
-//
-Engine.GuiLabel.prototype.update = function()
-{
-
-}
-
-
-//
-// render callback
-//
-Engine.GuiLabel.prototype.render = function()
-{
-	if (!this.visible) {
-		return false;
-	}
-	var ctx = this._world && this._world.canvas.getContext("2d");
-	if (ctx) {
-		ctx.save();
-		ctx.fillStyle = this.color;
-		ctx.font = this.font;
-		ctx.textAlign = this.align;
-		ctx.fillText(this.text, this.x, this.y, this.width);
-		ctx.restore();
+		var ctx = gameObject.canvas.getContext("2d");
+		if (ctx) {
+			ctx.save();
+			ctx.fillStyle = this.color;
+			ctx.font = this.font;
+			ctx.textAlign = this.align;
+			ctx.fillText(this.text, this.x, this.y, this.width);
+			ctx.restore();
+		}
 	}
 }

@@ -11,6 +11,7 @@
 //
 Engine.Entity = function (sprite, gameObject)
 {
+	/*
 	var self = this;
 	this.health = 100;
 	this.maxHealth = this.health;
@@ -54,323 +55,357 @@ Engine.Entity = function (sprite, gameObject)
 			self.getEventManager().fire('lastframe', self, self, sprite, action);
 		})
 	}
-
-	return self;
-}
+	*/
 
 
-//
-// returns or sets X position
-//
-// @chainable
-// @param int xVal
-// @return int when no argument is supplied
-//
-Engine.Entity.prototype.x = function(xVal)
-{
-	if (this._sprite) {
-		if (typeof(xVal) == "undefined")
-			return this._sprite.x;
+	var self = this;
 
-		this._sprite.x = xVal;
+	this.health = 100;
+	this.maxHealth = this.health;
+	this.weight = 100;
+	this.damage = 0;
+	this.type = 0;
+
+	// render pipe
+	var _rp = gameObject.rp,
+		_sprite = null;
+
+	if (sprite instanceof Engine.Sprite) {
+		_sprite = sprite.duplicate();
+	}
+	else if (sprite) {
+		var spriteData = gameObject.ssm.getSprite(sprite);
+		_sprite = spriteData.duplicate();
 	}
 
-	return this;
-}
+	this._collisionGroup = "";
 
+	// mixins
+	Engine.ObjectHelperMixin(this);
 
-//
-// returns or sets Y position
-//
-// @chainable
-// @param int yVal
-// @return int | NaN
-//
-Engine.Entity.prototype.y = function(yVal)
-{
-	if (this._sprite) {
-		if (typeof(yVal) == "undefined")
-			return this._sprite.y;
+	// events
+	Engine.EventManagerMixin(this);
+	this.registerEvents([
+		'die', 'beforehealthchange', 'healthchange', 'collide', 'update', 'lastframe'
+	]);
 
-		this._sprite.y = yVal;
+	if (_sprite) {
+		_sprite.on('lastframe', function(sprite, action) {
+			self.getEventManager().fire('lastframe', self, self, sprite, action);
+		})
 	}
 
-	return this;
-}
 
-
-//
-// move entity by given deltas
-//
-// @chainable
-// @param float dx
-// @param float dy
-//
-Engine.Entity.prototype.move = function(dx, dy)
-{
-	if (this._sprite) {
-		this._sprite.x += dx;
-		this._sprite.y += dy;
+	this.getSprite = function()
+	{
+		return _sprite;
 	}
 
-	return this;
-}
 
+	//
+	// returns or sets X position
+	//
+	// @chainable
+	// @param int xVal
+	// @return int when no argument is supplied
+	//
+	this.x = function(xVal)
+	{
+		if (_sprite) {
+			if (typeof(xVal) == "undefined")
+				return _sprite.x;
 
-//
-// moves entity to desired location
-//
-// @chainable
-// @param int destX - x
-// @param int destY - y
-//
-Engine.Entity.prototype.moveTo = function(destX, destY)
-{
-	if (this._sprite) {
-		if (this.speed == undefined) {
-			this.speed = 1;
+			_sprite.x = xVal;
 		}
-		/*
-		var lenX = destX - this.x();
-		var lenY = destY - this.y();
 
-		if (lenX != 0 && lenY != 0) {
-			var dx = lenX ? 1 * this.speed * -lenX / -(Math.abs(lenX)): 0;
-			var dy = lenX ? lenY / Math.abs(lenX) * this.speed : 1 * this.speed * -lenY / -(Math.abs(lenY));		// getting sign for correct direction
-			this.move(dx, dy);
-			return true;
-		}
-		*/
-
-		var lenX = destX - this.x();
-		var lenY = destY - this.y();
-
-		if (lenX != 0 && lenY != 0) {
-			var dx = 0;
-			var dy = 0;
-			if (Math.abs(lenX) > Math.abs(lenY)) {
-				dx = -lenX / -(Math.abs(lenX));
-				dy = lenY / lenX;
-				if (lenX < 0 && lenY < 0) {
-					dy = -dy;
-				}
-			}
-			else {
-				dy = -lenY / -(Math.abs(lenY));
-				dx = lenX / lenY;
-				if (lenX < 0 && lenY < 0) {
-					dx = -dx;
-				}
-			}
-
-//console.log(Engine.Util.format("dx: {0}, dy: {1}", dx, dy));
-			this.move(dx * this.speed, dy * this.speed);
-			return true;
-		}
-	}
-
-	return this;
-}
-
-
-//
-// returns or sets width
-//
-// @chainable
-// @param int val
-// @return int
-//
-Engine.Entity.prototype.width = function(val)
-{
-	if (this._sprite) {
-		return this._sprite.width(val);
-	}
-
-	return this;
-}
-
-
-//
-// returns or sets height
-//
-// @chainable
-// @param int val
-// @return int
-//
-Engine.Entity.prototype.height = function(val)
-{
-	if (this._sprite) {
-		return this._sprite.height(val);
-	}
-
-	return this;
-}
-
-
-//
-// returns or sets scale
-//
-// @chainable
-// @param int val
-// @return int
-//
-Engine.Entity.prototype.scale = function(val)
-{
-	if (this._sprite) {
-		if (typeof(val) == "undefined") {
-			return this._sprite.scale;
-		}
-		else this._sprite.scale = val;
-	}
-
-	return this;
-}
-
-
-//
-// adds health by given value (minus value will reduce it)
-//
-// @chainable
-// @param int val
-//
-Engine.Entity.prototype.addHealth = function(val)
-{
-	if (!val) {
-		return this.health;
-	}
-
-	if (this.getEventManager().fire('beforehealthchange', this, this, this.health, val) === false) {
-		// cancel health change if we got false from at least one callback
 		return this;
 	}
 
-	var oldHealth = this.health;
-	this.health += val;
-	this.getEventManager().fire('healthchange', this, this, oldHealth, val);
-	if (this.health <= 0) {
-		this.getEventManager().fire('die', this, this);
+
+
+	//
+	// returns or sets Y position
+	//
+	// @chainable
+	// @param int yVal
+	// @return int | NaN
+	//
+	this.y = function(yVal)
+	{
+		if (_sprite) {
+			if (typeof(yVal) == "undefined")
+				return _sprite.y;
+
+			_sprite.y = yVal;
+		}
+
+		return this;
 	}
 
-	return this;
-}
 
+	//
+	// move entity by given deltas
+	//
+	// @chainable
+	// @param float dx
+	// @param float dy
+	//
+	this.move = function(dx, dy)
+	{
+		if (_sprite) {
+			_sprite.x += dx;
+			_sprite.y += dy;
+		}
 
-//
-// sets/gets current action
-//
-// @param string actionName - name of action, if null - value is returned
-//
-Engine.Entity.prototype.action = function(actionName)
-{
-	if (this._sprite) {
-		if (typeof(actionName) == "undefined")
-			return this._sprite.action;
-
-		this._sprite.action = actionName;
-		this._sprite.reset(actionName);
+		return this;
 	}
 
-	return "";
-}
 
+	//
+	// moves entity to desired location
+	//
+	// @chainable
+	// @param int destX - x
+	// @param int destY - y
+	//
+	this.moveTo = function(destX, destY)
+	{
+		if (_sprite) {
+			if (this.speed == undefined) {
+				this.speed = 1;
+			}
 
-//
-// adds self to render pipe
-//
-// @chainable
-// @param string sceneName - scene name
-//
-Engine.Entity.prototype.addToRenderPipe = function(sceneName)
-{
-	if (this._rp) {
-		this._rp.addItem(this, sceneName);
+			var lenX = destX - this.x();
+			var lenY = destY - this.y();
+
+			if (lenX != 0 && lenY != 0) {
+				var dx = 0;
+				var dy = 0;
+				if (Math.abs(lenX) > Math.abs(lenY)) {
+					dx = -lenX / -(Math.abs(lenX));
+					dy = lenY / lenX;
+					if (lenX < 0 && lenY < 0) {
+						dy = -dy;
+					}
+				}
+				else {
+					dy = -lenY / -(Math.abs(lenY));
+					dx = lenX / lenY;
+					if (lenX < 0 && lenY < 0) {
+						dx = -dx;
+					}
+				}
+
+				this.move(dx * this.speed, dy * this.speed);
+				return true;
+			}
+		}
+
+		return this;
 	}
-	else console.log("[E] No render pipe!");
-
-	return this;
-}
 
 
-//
-// removes self from render pipe
-//
-// @chainable
-//
-Engine.Entity.prototype.removeFromRenderPipe = function()
-{
-	if (this._rp) {
-		this._rp.removeItem(this);
+	//
+	// returns or sets width
+	//
+	// @chainable
+	// @param int val
+	// @return int
+	//
+	this.width = function(val)
+	{
+		if (_sprite) {
+			return _sprite.width(val);
+		}
+
+		return this;
 	}
 
-	return this;
-}
 
+	//
+	// returns or sets height
+	//
+	// @chainable
+	// @param int val
+	// @return int
+	//
+	this.height = function(val)
+	{
+		if (_sprite) {
+			return _sprite.height(val);
+		}
 
-//
-// adds self to collision list
-//
-// @chainable
-// @param string group - collision group name
-//
-Engine.Entity.prototype.addToCollisions = function(group)
-{
-	this._collisionGroup = group;
-	//this._world._collisions["add" + group](this);
-	this._world.collisions.add(group, this);
-	return this;
-}
-
-
-//
-// removes self from collision list
-//
-// @chainable
-//
-Engine.Entity.prototype.removeFromCollisions = function()
-{
-	this._world.collisions.remove(this._collisionGroup, this);
-	return this;
-}
-
-
-//
-// returns copy
-//
-Engine.Entity.prototype.duplicate = function()
-{
-	var ent = new Engine.Entity(this._sprite, this._world);
-
-	ent.health = this.health;
-	ent.maxHealth = this.maxHealth;
-	ent.weight = this.weight;
-	ent.damage = this.damage;
-	ent.dx = this.dx;
-	ent.dy = this.dy;
-	ent.type = this.type;
-
-	ent.update = this.update;
-	ent.onCollide = this.onCollide;
-	ent.onDie = this.onDie;
-	return ent;
-}
-
-
-// - C -
-// frame update function
-//
-Engine.Entity.prototype.update = function()
-{
-	this.getEventManager().fire('update', this, this);
-}
-
-
-//
-// frame render function
-//
-Engine.Entity.prototype.render = function()
-{
-	if (this._sprite) {
-		this._sprite.play();
+		return this;
 	}
-}
 
+
+	//
+	// returns or sets scale
+	//
+	// @chainable
+	// @param int val
+	// @return int
+	//
+	this.scale = function(val)
+	{
+		if (_sprite) {
+			if (typeof(val) == "undefined") {
+				return _sprite.scale;
+			}
+			else _sprite.scale = val;
+		}
+
+		return this;
+	}
+
+
+	//
+	// adds health by given value (minus value will reduce it)
+	//
+	// @chainable
+	// @param int val
+	//
+	this.addHealth = function(val)
+	{
+		if (!val) {
+			return this.health;
+		}
+
+		if (this.getEventManager().fire('beforehealthchange', this, this, this.health, val) === false) {
+			// cancel health change if we got false from at least one callback
+			return this;
+		}
+
+		var oldHealth = this.health;
+		this.health += val;
+		this.getEventManager().fire('healthchange', this, this, oldHealth, val);
+		if (this.health <= 0) {
+			this.getEventManager().fire('die', this, this);
+		}
+
+		return this;
+	}
+
+
+	//
+	// sets/gets current action
+	//
+	// @param string actionName - name of action, if null - value is returned
+	//
+	this.action = function(actionName)
+	{
+		if (_sprite) {
+			if (typeof(actionName) == "undefined")
+				return _sprite.action;
+
+			_sprite.action = actionName;
+			_sprite.reset(actionName);
+		}
+
+		return "";
+	}
+
+
+	//
+	// adds self to render pipe
+	//
+	// @chainable
+	// @param string sceneName - scene name
+	//
+	this.addToRenderPipe = function(sceneName)
+	{
+		if (_rp) {
+			_rp.addItem(this, sceneName);
+		}
+		else console.log("[E] No render pipe!");
+
+		return this;
+	}
+
+
+	//
+	// removes self from render pipe
+	//
+	// @chainable
+	//
+	this.removeFromRenderPipe = function()
+	{
+		if (_rp) {
+			_rp.removeItem(this);
+		}
+
+		return this;
+	}
+
+
+	//
+	// adds self to collision list
+	//
+	// @chainable
+	// @param string group - collision group name
+	//
+	this.addToCollisions = function(group)
+	{
+		this._collisionGroup = group;
+		//gameObject._collisions["add" + group](this);
+		gameObject.collisions.add(group, this);
+		return this;
+	}
+
+
+	//
+	// removes self from collision list
+	//
+	// @chainable
+	//
+	this.removeFromCollisions = function()
+	{
+		gameObject.collisions.remove(this._collisionGroup, this);
+		return this;
+	}
+
+
+	//
+	// returns copy
+	//
+	this.duplicate = function()
+	{
+		var ent = new Engine.Entity(_sprite, gameObject);
+
+		ent.health = this.health;
+		ent.maxHealth = this.maxHealth;
+		ent.weight = this.weight;
+		ent.damage = this.damage;
+		ent.dx = this.dx;
+		ent.dy = this.dy;
+		ent.type = this.type;
+
+		ent.update = this.update;
+		ent.onCollide = this.onCollide;
+		ent.onDie = this.onDie;
+		return ent;
+	}
+
+
+	//
+	// frame update function
+	//
+	this.update = function()
+	{
+		self.getEventManager().fire('update', this, this);
+	}
+
+
+	//
+	// frame render function
+	//
+	this.render = function()
+	{
+		if (_sprite) {
+			_sprite.play();
+		}
+	}
+
+
+	return self;
+}

@@ -7,84 +7,58 @@
 //
 Engine.GuiProgress = function(bodySprite, stepSprite, gameObject)
 {
-	// game object
-	this._world = gameObject;
-
-	// render pipe
-	this._rp = this._world && this._world.rp;
-
-	// body sprite
-	this._sprite = null;
-	if (bodySprite instanceof Engine.Sprite) {
-		this._sprite = bodySprite.duplicate();
-	}
-	else if (bodySprite && this._world) {
-		var spriteData = this._world.ssm.getSprite(bodySprite);
-		this._sprite = spriteData.duplicate();
-	}
+	Engine.ObjectHelperMixin(this);
+	this.inherit(new Engine.Entity(bodySprite, gameObject), arguments,
+		{'public': ['addToRenderPipe', 'removeFromRenderPipe', 'x', 'y', 'width', 'height', 'scale', 'update']});
 
 	// step sprite
-	this._stepSprite = null;
+	var _stepSprite = null,
+		_sprite = this.getSprite();
+
 	if (stepSprite instanceof Engine.Sprite) {
-		this._stepSprite = stepSprite;
+		_stepSprite = stepSprite;
 	}
-	else if (bodySprite && this._world) {
-		this._stepSprite = this._world.ssm.getSprite(stepSprite);
+	else if (stepSprite) {
+		_stepSprite = gameObject.ssm.getSprite(stepSprite);
 	}
 
 	// step sprites list for rendering, idea is for making step sprite animate
-	this._stepSprites = [];
+	var _stepSprites = [];
 
 	// one step value in %
-	this._stepValue = 100 / (this._sprite.width() / this._stepSprite.width());
+	var _stepValue = 100 / (_sprite.width() / _stepSprite.width());
 
 	this.value = 0;
 	this.border = 1;
 	this.visible = true;
 
-	// events
-	Engine.EventManagerMixin(this);
-	this.registerEvents(['update']);
-}
 
-
-//
-// Some borrowed methods from Engine.Entity
-//
-Engine.GuiProgress.prototype.addToRenderPipe = Engine.Entity.prototype.addToRenderPipe;
-Engine.GuiProgress.prototype.removeFromRenderPipe = Engine.Entity.prototype.removeFromRenderPipe;
-Engine.GuiProgress.prototype.x = Engine.Entity.prototype.x;
-Engine.GuiProgress.prototype.y = Engine.Entity.prototype.y;
-Engine.GuiProgress.prototype.width = Engine.Entity.prototype.width;
-Engine.GuiProgress.prototype.height = Engine.Entity.prototype.height;
-Engine.GuiProgress.prototype.scale = Engine.Entity.prototype.scale;
-Engine.GuiProgress.prototype.update = Engine.Entity.prototype.update;
-
-
-Engine.GuiProgress.prototype.render = function()
-{
-	if (!this.visible) {
-		return false;
-	}
-	if (this._stepSprites.length <= 0) {
-		var totalSteps = (this._sprite.width() - this.border * 2) / this._stepSprite.width();
-		this._stepValue = 100 / totalSteps;
-
-		for (var i = 0; i < totalSteps; i += 1) {
-			var sprite = this._stepSprite.duplicate();
-			sprite.skip = 7;
-			sprite.x = this.x() + (this.border + sprite.width() * i);
-			sprite.y = this.y();
-			this._stepSprites.push(sprite);
+	this.render = function()
+	{
+		if (!this.visible) {
+			return;
 		}
-	}
 
-	var stepCount = this.value / this._stepValue;
-	for (var i = 0; i < stepCount; i += 1) {
-		this._stepSprites[i].play();
-	}
+		if (_stepSprites.length <= 0) {
+			var totalSteps = (_sprite.width() - this.border * 2) / _stepSprite.width();
+			_stepValue = 100 / totalSteps;
 
-	if (this._sprite) {
-		this._sprite.play();
+			for (var i = 0; i < totalSteps; i += 1) {
+				var sprite = _stepSprite.duplicate();
+				sprite.skip = 7;
+				sprite.x = this.x() + (this.border + sprite.width() * i);
+				sprite.y = this.y();
+				_stepSprites.push(sprite);
+			}
+		}
+
+		var stepCount = this.value / _stepValue;
+		for (i = 0; i < stepCount; i += 1) {
+			_stepSprites[i].play();
+		}
+
+		if (_sprite) {
+			_sprite.play();
+		}
 	}
 }
