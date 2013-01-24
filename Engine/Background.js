@@ -21,26 +21,72 @@ Engine.Background = function(canvas)
 	var _updateStatic = function() {};
 	var _renderStatic = function() {
 		_ctx.drawImage(_img, 0, 0, _img.width, _img.height,
-			0, _y, canvas.width, canvas.height);
+			0, 0, canvas.width, canvas.height);
 	}
 
-	// loop-y mode functions
-	var _updateYloop = function() {
-		if ((_y += 1) >= _img.height)
-			_y = 0;
-	};
-	var _renderYloop = function() {
-		_ctx.drawImage(_img, 0, 0, _img.width, _img.height - _y,
-			0, _y, canvas.width, canvas.height - _y);
+	function _modeLoop(config)
+	{
+		var defConfig = {
+			speed: 2
+		}
 
-		_ctx.drawImage(_img, 0, _img.height - _y,
-			_img.width, _y,
-			0, 0, canvas.width, _y);
+		config = Engine.Util.merge(defConfig, config);
+
+		var type = config.type || 'vertical',
+			y = 0,
+			types = {
+				vertical: function() {
+					this.update = function() {
+						if ((y += 1) >= _img.height)
+							y = 0;
+					}
+
+					this.render = function() {
+						_ctx.drawImage(_img, 0, 0, _img.width, _img.height - y,
+							0, y, canvas.width, canvas.height - y);
+
+						_ctx.drawImage(_img, 0, _img.height - y,
+							_img.width, y,
+							0, 0, canvas.width, y);
+					}
+				}
+			}
+
+		if (!(type in types)) {
+			throw new Error("No such type '{0}' for background curtain mode");
+		}
+
+		var loopObj = new types[type];
+
+
+		//
+		// recreate
+		//
+		this.init = function()
+		{
+			loopObj = new types[type];
+		}
+
+
+		//
+		// mode update function
+		//
+		this.update = function()
+		{
+			loopObj.update();
+		}
+
+		//
+		// mode render function
+		//
+		this.render = function()
+		{
+			loopObj.render();
+		}
 	}
 
 	function _modeCurtain(config)
 	{
-		var modeSelf = this;
 		var _defConfig = {
 			speed: 8
 		};
@@ -175,7 +221,7 @@ Engine.Background = function(canvas)
 			_modeObj.init();
 		}
 	}
-	
+
 
 	// modes
 	var _mode = 'static',
@@ -186,12 +232,9 @@ Engine.Background = function(canvas)
 			update: _updateStatic,
 			render: _renderStatic
 		},
-		'loop-y': {
-			update: _updateYloop,
-			render: _renderYloop
-		},
 		// new mode implementation which i like. All mode logics must be encapsulated!
-		'curtain': _modeCurtain
+		'curtain': _modeCurtain,
+		'loop': _modeLoop
 	};
 
 	Engine.EventManagerMixin(self);

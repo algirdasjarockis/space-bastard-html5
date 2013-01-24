@@ -150,7 +150,8 @@ SB.Level = function() {
 						self.getEventManager().fire('load', self);
 					});
 				})
-				.setMode('loop-y');
+				//.setMode('loop-y');
+				.setMode('loop', {type: 'vertical'});
 
 			// load sounds which probably (should) are cached by browser
 			if (Engine.Util.isArray(_lvlData.resources.sounds)) {
