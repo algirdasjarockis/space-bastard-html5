@@ -130,67 +130,35 @@ var SB = {
 
 
 	//
-	// create gui elements
+	// game init - main entry point of game
 	//
-	createGuiEntities: function()
+	init: function(canvasId)
 	{
 		var self = this,
-			game = self.game;
-
-		// main menu
-		game.scene("main-menu");
-		game.ent.buttonStart = new Engine.GuiButton("menuButton1", game);
-		game.ent.buttonStart
-			.x(600).y(240)
-			.set({
-				text: "Start",
-				captionFont: {
-					normal: "20px Arial",
-					hover: "20px Arial bold"
-				},
-				captionColor: {
-					normal: "#ffffff",
-					hover: "#ff0000"
-				},
-				captionAlign: "center",
-				captionMargin: {
-					top: 0, right: 0, bottom: 0,
-					left: -10
-				}
-			})
-			.on('click', function() {
-				game.sm.play("click");
-				game.scene('loading-screen');
-				SB.level.load(1, function() {
-					SB.createEnvironment();
-					self.player = new SB.Player()
-						.set({hero: game.ent.hero, score: 0});
-					//game.scene('main');
-				});
-			});
-
-		game.ent.pointer = new Engine.GuiPointer("pointer", game);
-		SB.gui.addItem(game.bg.mainMenu)
-			.addItem(game.ent.buttonStart)
-			.addItem(game.ent.pointer);
-
-		// pause menu
-		//SB.gui.addItem(game.bg.main, "pause-menu");
-
-		// back to main scene
-		game.scene("main");
-	},
-
-
-	//
-	// load resources for start window and create some gui stuff
-	//
-	load: function(callback)
-	{
-		var self = this,
-			game = self.game,
+			game = self.game = new Engine.Game(canvasId),
 			rp = game.rp;
 
+		self.canvasId = canvasId;
+
+		// create gui system
+		self.gui = new Engine.GuiSystem(self.game);
+
+		// create level object but do not load it
+		self.level = new SB.Level()
+			.on('finish', function(lvl) {
+				console.log(Engine.Util.format("Level {0} finished!", lvl.getNumber()));
+			})
+			.on('enemydie', function(lvl, enemy) {
+				SB.game.sm.play("explosionStrong");
+				self.player.score += enemy.maxHealth;
+				game.ent.label1.text = self.player.score;
+			});
+
+		// init controls
+		self.initMouse();
+		self.initKeyboard();
+
+		// create empty scenes
 		// render pipeline for game
 		rp.createScene("main")
 			// render pipeline for main menu scene
@@ -198,80 +166,178 @@ var SB = {
 			// render pipeline for pause menu
 			.createScene("pause-menu")
 			// level loading animation
-			.createScene("loading-screen");
+			.createScene("loading-screen")
+			// game over scene
+			.createScene("game-over");
 
 		// load sprite sheets
 		var spriteSheetDir = "img/sprites/";
 		game.ssm.setDir(spriteSheetDir)
 			.load(['gui/buttons', 'gui/elements', 'hero'], function(ssm) {
-				// all spritesheets loaded, create entities
-				self.createGuiEntities();
-				callback();
+				// all spritesheets loaded
+				game.bg.mainMenu = new Engine.Background(game.canvas)
+					.load("img/sprites/gui/start.jpg", function() {
+						// let's start create entities
+						// main menu
+						game.scene("main-menu");
+						game.ent.buttonStart = new Engine.GuiButton("menuButton1", game);
+						game.ent.buttonStart
+							.x(600).y(240)
+							.set({
+								text: "Start",
+								captionFont: {
+									normal: "20px Arial",
+									hover: "20px Arial bold"
+								},
+								captionColor: {
+									normal: "#ffffff",
+									hover: "#ff0000"
+								},
+								captionAlign: "center",
+								captionMargin: {
+									top: 0, right: 0, bottom: 0,
+									left: -10
+								}
+							})
+							.on('click', function() {
+								// show loading screen
+								game.sm.play("click");
+								game.scene('loading-screen');
+
+								// load level
+								SB.level.load(1);
+							});
+
+						game.ent.pointer = new Engine.GuiPointer("pointer", game);
+						SB.gui.addItem(game.bg.mainMenu)
+							.addItem(game.ent.buttonStart)
+							.addItem(game.ent.pointer);
+
+						// once all entities are create start game
+						self.game.scene("main-menu");
+						self.game.on('scenechange', self.onSceneChange);
+
+						// start all loops here
+						self.game.start();
+					});
+
+				game.bg.doors = new Engine.Background(game.canvas)
+					.load('img/backgrounds/doors.jpg')
+					.setMode('curtain', {
+						type: 'horizontal',
+						speed: 10
+					})
+					.on('load', function(bg) {
+						game.rp.addItem(bg, 'loading-screen');
+					})
+					.on('finish', function(bg) {
+						game.scene('main');
+						bg.reinit();
+					});
+
+				// sounds
+				game.sm.load({handle: 'mainTheme', path: 'sounds/main-theme.wav', loop: true, autoPlay: true})
+					.load({handle: 'click', path: 'sounds/menu_click.wav'})
+					.load({handle: 'pause0', path: 'sounds/pause-theme0.wav', loop: true})
+					.load({handle: 'pause1', path: 'sounds/pause-theme1.WAV', loop: true})
+					.load({handle: 'pause2', path: 'sounds/pause-theme2.wav', loop: true})
+					.load({handle: 'pause3', path: 'sounds/pause-theme3.wav', loop: true})
+					.load({handle: 'pulse', path: 'sounds/pulse.wav'})
+					.load({handle: 'explosionStrong', path: 'sounds/explosion-strong.wav'})
+					.volume('', 0.05); // set very low volume for a while :)
+
+				// create game over scene
+				game.ent.buttonRestart = new Engine.GuiButton("menuButton1", game);
+				game.ent.buttonRestart
+					.x(400).y(240)
+					.set({
+						text: "Restart",
+						captionFont: {
+							normal: "20px Arial",
+							hover: "20px Arial bold"
+						},
+						captionColor: {
+							normal: "#ffffff",
+							hover: "#ff0000"
+						},
+						captionAlign: "center",
+						captionMargin: {
+							top: 0, right: 0, bottom: 0,
+							left: -10
+						}
+					})
+					.on('click', function() {
+						console.log('click');
+						// show loading screen
+						game.sm.play("click");
+						//SB.game.removeSceneEntities('main');
+						game.scene('main');
+
+						SB.level.run();
+						// load level
+						//SB.level.load(1);
+					});
 			});
 
-		// background
-		game.bg.mainMenu = new Engine.Background(game.canvas)
-			.load("img/sprites/gui/start.jpg");
+		// some callbacks
+		SB.level.on('load', function() {
+			// create some entities that are not managed by level
+			SB.gui.addItem(SB.level.bg, 'main');
 
-		game.bg.doors = new Engine.Background(game.canvas)
-			.load('img/backgrounds/doors.jpg')
-			.setMode('curtain', {
-				type: 'horizontal',
-				speed: 10
-			})
-			.on('load', function(bg) {
-				game.rp.addItem(bg, 'loading-screen');
-			})
-			.on('finish', function(bg) {
-				console.log('BACKGROUND FINITO!');
-				game.scene('main');
-				bg.reinit();
-			})
+			// create gui for pause menu
+			SB.gui.addItem(SB.level.bg, 'pause-menu');
+			game.ent.pauseMenuBtn1 = new Engine.GuiButton("pauseMenuBtn1", game);
+			game.ent.pauseMenuBtn1.captionColor.hover = "#555555";
+			game.ent.pauseMenuBtn1.captionMargin.left = -10;
+			game.ent.pauseMenuBtn1.x(600).y(240)
+				.set({
+					captionAlign: 'center',
+					text: 'Back',
+					captionFont: {
+						normal: "20px Arial",
+						hover: "20px Arial bold"
+					}
+				})
+				.on('click', function() {
+					game.sm.play("click");
+					game.scene("main");
+				})
 
-		// sounds
-		game.sm.load({handle: 'mainTheme', path: 'sounds/main-theme.wav', loop: true, autoPlay: true})
-			.load({handle: 'click', path: 'sounds/menu_click.wav'})
-			.load({handle: 'pause0', path: 'sounds/pause-theme0.wav', loop: true})
-			.load({handle: 'pause1', path: 'sounds/pause-theme1.WAV', loop: true})
-			.load({handle: 'pause2', path: 'sounds/pause-theme2.wav', loop: true})
-			.load({handle: 'pause3', path: 'sounds/pause-theme3.wav', loop: true})
-			.load({handle: 'pulse', path: 'sounds/pulse.wav'})
-			.load({handle: 'explosionStrong', path: 'sounds/explosion-strong.wav'})
-			.volume('', 0.05); // set very low volume for a while :)
-	},
+			SB.gui.addItem(game.ent.pauseMenuBtn1, "pause-menu")
+				.addItem(game.ent.pointer, "pause-menu");
 
+			// other useful items
+			game.ent.label1 = new Engine.GuiLabel(game);
+			game.ent.label1.set({
+				x: 20, y: 20,
+				width: 500,
+				color: "#ffffff",
+				font: "18px Tahoma",
+				text: "0"
+			});
+			SB.gui.addItem(game.ent.label1, "main");
 
-	//
-	// game init - main entry point of game
-	//
-	init: function(canvasId)
-	{
-		var self = this;
-		self.canvasId = canvasId;
-		self.game = new Engine.Game(self.canvasId);
+			game.ent.pg = new Engine.GuiProgress("progress", "progressStep", game);
+			game.ent.pg.x(10).y(560);
+			game.ent.pg.value = 100;
+			game.ent.pg.on('update', function(pg) {
+				pg.value = game.ent.hero.health / game.ent.hero.maxHealth * 100;
+			});
+			SB.gui.addItem(game.ent.pg, "main");
 
-		// load all resources and create all entities needed for start menu
-		self.load(function() {
-			// set starting scene
-			self.game.scene("main-menu");
-			self.game.on('scenechange', self.onSceneChange);
+			// set game over scene
+			game.scene('game-over');
+			SB.gui.addItem(SB.level.bg)
+				.addItem(game.ent.buttonRestart)
+				.addItem(game.ent.pointer);
 
-			// start all loops here
-			self.game.start();
-		});
+			// create player instance
+			self.player = new SB.Player()
+				.set({score: 0});
 
-		// create gui system
-		self.gui = new Engine.GuiSystem(self.game);
-
-		// create level object but do not load it
-		self.level = new SB.Level();
-		self.level
-			.on('load', self.onLevelLoad)
-			.on('finish', self.onLevelFinished);
-
-		// init controls
-		self.initMouse();
-		self.initKeyboard();
+			game.scene('main');
+			SB.level.run();
+		})
 	},
 
 
@@ -283,15 +349,9 @@ var SB = {
 		var self = this;
 		self.game
 			.on('mousemove', function(game, e) {
-				switch (game.scene()) {
-				case 'main':
-					break;
-
-				case 'main-menu':
-				case 'pause-menu':
+				if (game.scene() != 'main') {
 					game.ent.pointer.x(e.clientX).y(e.clientY);
 					self.gui.onMouseMove(e);
-					break;
 				}
 			})
 			.on('mouseout', function(game, e) {
@@ -302,11 +362,8 @@ var SB = {
 				}
 			})
 			.on('click', function(game, e) {
-				switch (game.scene()) {
-				case 'main-menu':
-				case 'pause-menu':
+				if (game.scene() != 'main') {
 					self.gui.onClick(e);
-					break;
 				}
 			});
 	},
@@ -333,124 +390,6 @@ var SB = {
 	},
 
 
-	//
-	// create environment and gui elements for game loop
-	//
-	createEnvironment: function()
-	{
-		var game = this.game;
-		// main game loop entities
-		//SB.gui.addItem(game.bg.main, "main");
-		SB.gui.addItem(SB.level.bg, 'main');
-
-		// create gui for pause menu
-		SB.gui.addItem(SB.level.bg, 'pause-menu');
-		game.ent.pauseMenuBtn1 = new Engine.GuiButton("pauseMenuBtn1", game);
-		game.ent.pauseMenuBtn1.captionColor.hover = "#555555";
-		game.ent.pauseMenuBtn1.captionMargin.left = -10;
-		game.ent.pauseMenuBtn1.x(600).y(240)
-			.set({
-				captionAlign: 'center',
-				text: 'Back',
-				captionFont: {
-					normal: "20px Arial",
-					hover: "20px Arial bold"
-				}
-			})
-			.on('click', function() {
-				game.sm.play("click");
-				game.scene("main");
-			})
-
-		SB.gui.addItem(game.ent.pauseMenuBtn1, "pause-menu")
-			.addItem(game.ent.pointer, "pause-menu");
-
-		// our bastard hero
-		//game.ent.hero = new Engine.Entity(game.rm._sprites.hero, game);
-		game.ent.hero = SB.GameEntity(new Engine.Entity("hero", game)
-			.set({type: 'hero', maxHealth: 1000, health: 1000, weight: 200})
-			.addToRenderPipe('main')
-			.on('collide', function(item) {
-				//this.removeFromCollisions();
-				if (item.type == "enemy") {
-					this.addHealth(-(item.weight / this.weight * this.maxHealth));
-				}
-				else if (item.type == "ammo") {
-					this.addHealth(-item.damage);
-					item.removeFromCollisions()
-						.removeFromRenderPipe();
-				}
-				else if (item.type == "powerup") {
-					var powerup = item;
-					item.removeFromCollisions()
-						.removeFromRenderPipe();
-					SB.onPowerupTake(powerup);
-				}
-			})
-			.on('die', function() {
-				game.scene("main-menu");
-			})
-			.on('lastframe', function() {
-				// respawn
-				// this refers to Engine.Sprite!
-				if (this.action == "explode") {
-					this.action = "main";
-					game.ent.hero.addToCollisions("friends");
-				}
-			}));
-
-		// hero is invincible for some time
-		setTimeout(function() {
-			game.ent.hero.addToCollisions("friends");
-		}, 3000);
-
-
-		// other useful items
-		game.ent.label1 = new Engine.GuiLabel(game);
-		game.ent.label1.set({
-			x: 20, y: 20,
-			width: 500,
-			color: "#ffffff",
-			font: "18px Tahoma",
-			text: "0"
-		});
-		SB.gui.addItem(game.ent.label1, "main");
-
-		game.ent.pg = new Engine.GuiProgress("progress", "progressStep", game);
-		game.ent.pg.x(10).y(560);
-		game.ent.pg.value = 100;
-		game.ent.pg.on('update', function(pg) {
-			pg.value = SB.player.hero.health / SB.player.hero.maxHealth * 100;
-		});
-		SB.gui.addItem(game.ent.pg, "main");
-	},
-
-
-	onLevelLoad: function()
-	{
-		console.log(Engine.Util.format("Level {0} loaded!", 1));
-		SB.level.run();
-	},
-
-
-	onLevelStarted: function()
-	{
-		console.log(Engine.Util.format("Level {0} started!", this.getNumber()));
-	},
-
-
-	onLevelFinished: function()
-	{
-		console.log(Engine.Util.format("Level {0} finished!", this.getNumber()));
-	},
-
-
-	onEnemyDie: function(enemy)
-	{
-		SB.game.sm.play("explosionStrong");
-		this.player.score += enemy.maxHealth;
-		this.game.ent.label1.text = this.player.score;
-	},
 
 
 	onSceneChange: function(from, to)

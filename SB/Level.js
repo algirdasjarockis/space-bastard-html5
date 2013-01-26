@@ -6,10 +6,11 @@ SB.Level = function() {
 	var self = this;
 
 	// privates
-	var _levelNo = 0;
-	var _blockNo = 0;
-	var _lvlData = null;
-	var _ssm = new Engine.SpritesheetManager();
+	var _levelNo = 0,
+		_blockNo = 0,
+		_lvlData = null,
+		_lvlInterval = 0,
+		_ssm = new Engine.SpritesheetManager();
 
 	_ssm.setDir('img/sprites/');
 
@@ -23,7 +24,6 @@ SB.Level = function() {
 			return false;
 		}
 		var difficulty = 0;
-		var levelInterval = 0;
 
 		var wave = _lvlData.waves[_blockNo];
 		var duration = 0;
@@ -41,10 +41,12 @@ SB.Level = function() {
 		if (typeof(wave.finished) == 'function') {
 			// it is conditional wave
 			if (aiFunc) {
-				aiFunc(self);
+				SB.game.addTimeout("level_" + _blockNo, function() {
+					aiFunc(self);
+					_processCondition(wave.finished);
+				}, _lvlInterval);
+				_lvlInterval = 0;
 			}
-
-			_processCondition(wave.finished);
 		}
 		else {
 			// it is timed wave
@@ -60,17 +62,17 @@ SB.Level = function() {
 			if (aiFunc) {
 				SB.game.addTimeout("level_" + _blockNo, function() {
 					aiFunc(self);
-				}, levelInterval);
+				}, _lvlInterval);
 			}
 
 			// increase it more for next timeouts
-			levelInterval += duration;
+			_lvlInterval += duration;
 
 			if ((_blockNo += 1) >= _lvlData.waves.length) {
 				// it's last block
 				SB.game.addTimeout("level_finish", function() {
 					self.getEventManager().fire('finish', self);
-				}, levelInterval);
+				}, _lvlInterval);
 			}
 			else {
 				// continue to next block
@@ -97,7 +99,7 @@ SB.Level = function() {
 
 					if ((_blockNo += 1) >= _lvlData.waves.length) {
 						// it's last block
-						self.getEventManager().fire('finish', self);
+						self.getEventManager().fire('finish', self, self);
 					}
 					else {
 						// continue to next block
@@ -120,7 +122,7 @@ SB.Level = function() {
 
 	// events
 	Engine.EventManagerMixin(self);
-	self.registerEvents(['beforeload', 'load', 'beforestart', 'start', 'finish']);
+	self.registerEvents(['beforeload', 'load', 'beforestart', 'start', 'finish', 'enemydie']);
 
 	//
 	// loads level
@@ -214,6 +216,7 @@ SB.Level = function() {
 
 		if (_lvlData.waves.length > 0) {
 			self.getEventManager().fire('start', self);
+			_lvlInterval = 0;
 			_blockNo = 0;
 			_processBlock();
 		}
@@ -269,7 +272,8 @@ SB.Level = function() {
 			.addToRenderPipe("main")
 			.addToCollisions("enemies")
 			.on('die', function() {
-				SB.onEnemyDie(enemy);
+				//SB.onEnemyDie(enemy);
+				self.getEventManager().fire('enemydie', self, self, enemy);
 
 				this.removeFromRenderPipe();
 				this.removeFromCollisions();
@@ -331,4 +335,6 @@ SB.Level = function() {
 				powerup.move(0, 0.5);
 			})
 	}
+
+	return self;
 }

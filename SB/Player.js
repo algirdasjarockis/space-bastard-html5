@@ -6,8 +6,9 @@
 SB.Player = function()
 {
 	var self = this;
-	var _hero = SB.game.ent.hero;
-	var _shooting = false;
+	var game = SB.game,
+		_hero = null,
+		_shooting = false;
 
 	this.score = 0;
 	this.level = 1;
@@ -15,6 +16,44 @@ SB.Player = function()
 
 	// mixins
 	Engine.ObjectHelperMixin(this);
+
+	// our bastard hero
+	_hero = game.ent.hero = SB.GameEntity(new Engine.Entity("hero", game)
+		.set({type: 'hero', maxHealth: 1000, health: 1000, weight: 200})
+		.addToRenderPipe('main')
+		.on('collide', function(item) {
+			//this.removeFromCollisions();
+			if (item.type == "enemy") {
+				this.addHealth(-(item.weight / this.weight * this.maxHealth));
+			}
+			else if (item.type == "ammo") {
+				this.addHealth(-item.damage);
+				item.removeFromCollisions()
+					.removeFromRenderPipe();
+			}
+			else if (item.type == "powerup") {
+				var powerup = item;
+				item.removeFromCollisions()
+					.removeFromRenderPipe();
+				SB.onPowerupTake(powerup);
+			}
+		})
+		.on('die', function() {
+			game.scene("game-over");
+		})
+		.on('lastframe', function() {
+			// respawn
+			// this refers to Engine.Sprite!
+			if (this.action == "explode") {
+				this.action = "main";
+				game.ent.hero.addToCollisions("friends");
+			}
+		}));
+
+	// hero is invincible for some time
+	setTimeout(function() {
+		game.ent.hero.addToCollisions("friends");
+	}, 3000);
 
 	// some event catching
 	SB.game
