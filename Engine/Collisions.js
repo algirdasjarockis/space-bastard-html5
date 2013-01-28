@@ -8,9 +8,9 @@
 //
 Engine.Collisions = function()
 {
-	this.friends = [];
-	this.enemies = [];
-	this.neutral = [];
+	this.friends = {};
+	this.enemies = {};
+	this.neutral = {};
 
 	// flag that's we are in collision detection loop at the moment
 	this._inCheck = false;
@@ -27,14 +27,18 @@ Engine.Collisions = function()
 // @param Object item - object
 // @return bool
 //
-Engine.Collisions.prototype.add = function(group, item)
+Engine.Collisions.prototype.add = function(group, subgroup, item)
 {
 	if (typeof(this[group]) == "undefined") {
 		console.log("[E] No such collision group '" + group + "'");
 		return false;
 	}
 
-	this[group].push(item);
+	if (typeof this[group][subgroup] == "undefined") {
+		this[group][subgroup] = [];
+	}
+
+	this[group][subgroup].push(item);
 	return true;
 }
 
@@ -46,7 +50,7 @@ Engine.Collisions.prototype.add = function(group, item)
 // @param Object item - object
 // @return bool
 //
-Engine.Collisions.prototype.remove = function(group, item)
+Engine.Collisions.prototype.remove = function(group, subgroup, item)
 {
 	// checking if removal was requested somewhere outside during collision detection loop
 	if (!this._inCheck) {
@@ -55,17 +59,21 @@ Engine.Collisions.prototype.remove = function(group, item)
 			return false;
 		}
 
-		var pos = this[group].indexOf(item);
+		if (typeof this[group][subgroup] == "undefined") {
+			throw new Error(Engine.Util.format("No such subgroup '{0}'", subgroup));
+		}
+
+		var pos = this[group][subgroup].indexOf(item);
 		if (pos !== -1) {
-			var start = this[group].slice(0, pos);
-			var end = this[group].slice(pos + 1);
-			this[group] = start.concat(end);
+			var start = this[group][subgroup].slice(0, pos);
+			var end = this[group][subgroup].slice(pos + 1);
+			this[group][subgroup] = start.concat(end);
 			return true;
 		}
 	}
 	else {
 		// set this item for deletion when collision detect loop ends
-		this._garbage.push({"group": group, "item": item});
+		this._garbage.push({"group": group, "subgroup": subgroup, "item": item});
 	}
 
 	return false;
@@ -75,8 +83,12 @@ Engine.Collisions.prototype.remove = function(group, item)
 //
 // search for any collision in all lists
 //
-Engine.Collisions.prototype.check = function()
+Engine.Collisions.prototype.check = function(subgroup)
 {
+	if (!this.friends[subgroup] || !this.enemies[subgroup]) {
+		return;
+	}
+
 	function collision(c1, c2)
 	{
 		// for getting center coordinates
@@ -94,10 +106,10 @@ Engine.Collisions.prototype.check = function()
 
 	this._inCheck = true;
 	// loop over all items to check for collision
-	for (var i = 0, fCount = this.friends.length; i < fCount; i++) {
-		for (var j = 0, eCount = this.enemies.length; j < eCount; j++) {
-			var friend = this.friends[i];
-			var enemy = this.enemies[j];
+	for (var i = 0, fCount = this.friends[subgroup].length; i < fCount; i++) {
+		for (var j = 0, eCount = this.enemies[subgroup].length; j < eCount; j++) {
+			var friend = this.friends[subgroup][i];
+			var enemy = this.enemies[subgroup][j];
 			if (collision(friend, enemy)) {
 				//this.friends[i].onCollide(this.enemies[j]);
 				//this.enemies[j].onCollide(this.friends[i]);
@@ -111,7 +123,7 @@ Engine.Collisions.prototype.check = function()
 
 	if (this._garbage.length > 0) {
 		for (var k = 0, max = this._garbage.length; k < max; k++) {
-			this.remove(this._garbage[k].group, this._garbage[k].item);
+			this.remove(this._garbage[k].group, this._garbage[k].subgroup, this._garbage[k].item);
 		}
 		this._garbage = [];
 	}
@@ -122,8 +134,18 @@ Engine.Collisions.prototype.removeAll = function()
 {
 	var groups = ["friends", "enemies", "neutral"];
 	for (var i = 0, max = groups.length; i < max; i += 1) {
+		var subgroups = this[groups[i]];
+		for (var subgroup in subgroups) {
+			for (var j = 0, len = subgroups[subgroup].length; j < len; j += 1) {
+				var item = subgroups[subgroup][j];
+				this.remove(groups[i], subgroup, item);
+			}
+		}
+	}
+	/*
+	for (var i = 0, max = groups.length; i < max; i += 1) {
 		for (var j = 0, len = this[groups[i]].length; j < len; j += 1) {
 			this.remove(groups[i], this[groups[i]][j]);
 		}
-	}
+	}*/
 }

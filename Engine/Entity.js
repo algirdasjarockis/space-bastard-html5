@@ -11,53 +11,6 @@
 //
 Engine.Entity = function (sprite, gameObject)
 {
-	/*
-	var self = this;
-	this.health = 100;
-	this.maxHealth = this.health;
-	this.weight = 100;
-	this.damage = 0;
-	this.dx = 0;
-	this.dy = 0;
-
-	this.type = 0;
-
-	// game object
-	this._world = gameObject;
-
-	// render pipe
-	this._rp = this._world && this._world.rp;
-
-	// current action name of sprite
-	this._sprite = null;
-
-	if (sprite instanceof Engine.Sprite) {
-		this._sprite = sprite.duplicate();
-	}
-	else if (sprite) {
-		var spriteData = this._world.ssm.getSprite(sprite);
-		this._sprite = spriteData.duplicate();
-	}
-
-	this._collisionGroup = "";
-
-	// mixins
-	Engine.ObjectHelperMixin(this);
-
-	// events
-	Engine.EventManagerMixin(this);
-	this.registerEvents([
-		'die', 'beforehealthchange', 'healthchange', 'collide', 'update', 'lastframe'
-	]);
-
-	if (this._sprite) {
-		this._sprite.on('lastframe', function(sprite, action) {
-			self.getEventManager().fire('lastframe', self, self, sprite, action);
-		})
-	}
-	*/
-
-
 	var self = this;
 
 	this.health = 100;
@@ -65,6 +18,8 @@ Engine.Entity = function (sprite, gameObject)
 	this.weight = 100;
 	this.damage = 0;
 	this.type = 0;
+	this.scene = '';
+	this.layer = '';
 
 	// render pipe
 	var _rp = gameObject.rp,
@@ -311,11 +266,12 @@ Engine.Entity = function (sprite, gameObject)
 	//
 	// @chainable
 	// @param string sceneName - scene name
+	// @param string layerName - layer name
 	//
-	this.addToRenderPipe = function(sceneName)
+	this.addToRenderPipe = function(sceneName, layerName)
 	{
 		if (_rp) {
-			_rp.addItem(this, sceneName);
+			_rp.addItem(this, sceneName, layerName);
 		}
 		else console.log("[E] No render pipe!");
 
@@ -348,7 +304,7 @@ Engine.Entity = function (sprite, gameObject)
 	{
 		this._collisionGroup = group;
 		//gameObject._collisions["add" + group](this);
-		gameObject.collisions.add(group, this);
+		gameObject.collisions.add(group, this.scene, this);
 		return this;
 	}
 
@@ -360,7 +316,7 @@ Engine.Entity = function (sprite, gameObject)
 	//
 	this.removeFromCollisions = function()
 	{
-		gameObject.collisions.remove(this._collisionGroup, this);
+		gameObject.collisions.remove(this._collisionGroup, this.scene, this);
 		return this;
 	}
 
@@ -379,6 +335,8 @@ Engine.Entity = function (sprite, gameObject)
 		ent.dx = this.dx;
 		ent.dy = this.dy;
 		ent.type = this.type;
+		ent.layer = this.layer;
+		ent.scene = this.scene;
 
 		ent.update = this.update;
 		ent.onCollide = this.onCollide;

@@ -35,14 +35,9 @@ Engine.Game = function (canvasElem)
 			return false;
 		}
 
-		var scene = self.rp.rp[self.rp.currScene];
-		for (var i = 0, len = scene.length; i < len; i += 1 ) {
-			if (scene[i]) {
-				scene[i].update();
-			}
-		}
+		self.rp.update();
 		self.getEventManager().fire('update', self, self);
-		self.collisions.check();
+		self.collisions.check(self.scene());
 		return true;
 	}
 

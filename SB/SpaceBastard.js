@@ -147,6 +147,7 @@ var SB = {
 		self.level = new SB.Level()
 			.on('finish', function(lvl) {
 				console.log(Engine.Util.format("Level {0} finished!", lvl.getNumber()));
+				game.scene("game-over");
 			})
 			.on('enemydie', function(lvl, enemy) {
 				SB.game.sm.play("explosionStrong");
@@ -160,7 +161,7 @@ var SB = {
 
 		// create empty scenes
 		// render pipeline for game
-		rp.createScene("main")
+		rp.createScene("main", {layers: ['bg', 'game-entities', 'ui'], defaultLayer: 'game-entities'})
 			// render pipeline for main menu scene
 			.createScene("main-menu")
 			// render pipeline for pause menu
@@ -282,7 +283,7 @@ var SB = {
 		// some callbacks
 		SB.level.on('load', function() {
 			// create some entities that are not managed by level
-			SB.gui.addItem(SB.level.bg, 'main');
+			SB.gui.addItem(SB.level.bg, 'main', 'bg');
 
 			// create gui for pause menu
 			SB.gui.addItem(SB.level.bg, 'pause-menu');
@@ -308,22 +309,24 @@ var SB = {
 
 			// other useful items
 			game.ent.label1 = new Engine.GuiLabel(game);
-			game.ent.label1.set({
-				x: 20, y: 20,
-				width: 500,
-				color: "#ffffff",
-				font: "18px Tahoma",
-				text: "0"
-			});
-			SB.gui.addItem(game.ent.label1, "main");
+			game.ent.label1
+				.set({
+					x: 20, y: 20,
+					width: 500,
+					color: "#ffffff",
+					font: "18px Tahoma",
+					text: "0"
+				})
+				.addToRenderPipe("main", "ui");
 
 			game.ent.pg = new Engine.GuiProgress("progress", "progressStep", game);
 			game.ent.pg.x(10).y(560);
 			game.ent.pg.value = 100;
-			game.ent.pg.on('update', function(pg) {
-				pg.value = game.ent.hero.health / game.ent.hero.maxHealth * 100;
-			});
-			SB.gui.addItem(game.ent.pg, "main");
+			game.ent.pg
+				.addToRenderPipe('main', 'ui')
+				.on('update', function(pg) {
+					pg.value = game.ent.hero.health / game.ent.hero.maxHealth * 100;
+				});
 
 			// set game over scene
 			game.scene('game-over');

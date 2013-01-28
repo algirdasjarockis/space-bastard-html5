@@ -5,140 +5,333 @@
 Engine.RenderPipe = function()
 {
 	var self = this;
+
     // collection of scenes
     this.rp = {};
 
     // current usable scene
     this.currScene = "";
 
-	// flag that means we are in rendering loop at the moment
-	this._rendering = false;
-
-	// objects that must be destroyed later
-	this._garbage = [];
+	var _rendering = false,
+		_garbage = [];
 
 	Engine.EventManagerMixin(self);
 	self.registerEvents(['createscene']);
-}
 
 
-//
-// adds separate scene
-//
-// @chainable
-// @param string name - scene name
-//
-Engine.RenderPipe.prototype.createScene = function(name)
-{
-	this.rp[name] = [];
-	if (this.currScene != "") {
-		this.currScene = name;
+	//
+	// Utility class for encapsulating pesky logics - represents Scene
+	//
+	// @constructor
+	// @param Object config - some configuration for class, fields:
+	//			@config Array layers - names of layers
+	//			@config string defaultLayer - default layer name
+	//
+	function Scene(config)
+	{
+		var _layers = {},
+			_defaultLayer = '',
+			_order = [];
+
+		// for debugging purposes
+		this.getItems = function()
+		{
+			return _layers;
+		}
+
+
+		//
+		// create layer
+		//
+		// @chainable
+		// @param string name - layer name
+		//
+		this.createLayer = function(name, zindex)
+		{
+			if (name) {
+				_order.push(name);
+				_layers[name] = [];
+
+				if (!_defaultLayer) {
+					// first created layer will be default
+					_defaultLayer = name;
+				}
+			}
+			else {
+				throw new Error("Layer name can not be falsy value");
+			}
+
+			return this;
+		}
+
+
+		//
+		// set given layer as default which will be used for new items
+		//
+		// @chainable
+		// @param string name - layer name
+		//
+		this.setDefaultLayer = function(name)
+		{
+			if (!(name in _layers)) {
+				throw new Error(Engine.Util.format("No such layer '{0}' to set as default", name));
+			}
+
+			_defaultLayer = name;
+
+			return this;
+		}
+
+
+		//
+		// return previously set default layer
+		//
+		// @return string
+		//
+		this.returnDefaultLayer = function()
+		{
+			return _defaultLayer;
+		}
+
+
+		//
+		// adds renderable item (object must have .render() and .update() methods)
+		//
+		// @chainable
+		// @param Object item - object to display
+		// @param string sceneName - scene name, if not given - current scene
+		//
+		this.addItem = function(item, layer)
+		{
+			if (!layer) {
+				layer = _defaultLayer;
+			}
+
+			if (!(layer in _layers)) {
+				throw new Error(Engine.Util.format("No such layer '{0}'", layer));
+			}
+
+			_layers[layer].push(item);
+			item.layer = layer;
+
+			return true;
+		}
+
+
+		//
+		// removes item from layer
+		//
+		// @chainable
+		// @param Object item - item for removal
+		// @return bool
+		//
+		this.removeItem = function(item)
+		{
+			var layer = _defaultLayer;
+			// remove only if it's safe
+			if (!_rendering) {
+				if (item.layer) {
+					layer = item.layer;
+				}
+
+				var pos = _layers[layer].indexOf(item);
+				if (pos != -1) {
+					var start = _layers[layer].slice(0, pos);
+					var end = _layers[layer].slice(pos + 1);
+					_layers[layer] = start.concat(end);
+
+					return this;
+				}
+			}
+			else {
+				_garbage.push(item);
+			}
+
+			return this;
+		}
+
+
+		//
+		// render
+		//
+		this.render = function()
+		{
+			for (var i = 0, max = _order.length; i < max; i += 1) {
+				var layer = _layers[_order[i]];
+				for (var j = 0, len = layer.length; j < len; j += 1) {
+					layer[j].render();
+				}
+			}
+		}
+
+
+		//
+		// update
+		//
+		this.update = function()
+		{
+			for (var i = 0, max = _order.length; i < max; i += 1) {
+				var layer = _layers[_order[i]];
+				for (var j = 0, len = layer.length; j < len; j += 1) {
+					layer[j].update();
+				}
+			}
+		}
+
+
+		// create defined layers is given any
+		if (config && Engine.Util.isArray(config.layers)) {
+			for (var i = 0, max = config.layers.length; i < max; i += 1) {
+				this.createLayer(config.layers[i]);
+			}
+		}
+
+		if (config && config.defaultLayer) {
+			this.setDefaultLayer(config.defaultLayer);
+		}
+
+		return this;
 	}
 
-	this.getEventManager().fire('createscene', this, this, name);
 
-	return this;
-}
+	//
+	// adds separate scene
+	//
+	// @chainable
+	// @param string name - scene name
+	// @param Object sceneConfig - Scene config, @see Scene
+	//
+	this.createScene = function(name, sceneConfig)
+	{
+		/// this.rp[name] = [];
+		this.rp[name] = new Scene(sceneConfig);
+		if (!sceneConfig || !sceneConfig.layers) {
+			// if no layers were presented, create default one
+			this.rp[name].createLayer('main');
+		}
 
+		if (this.currScene != "") {
+			this.currScene = name;
+		}
 
-//
-// adds renderable item (object must have .render() and .update() methods)
-//
-// @chainable
-// @param Object item - object to display
-// @param string sceneName - scene name, if not given - current scene
-//
-Engine.RenderPipe.prototype.addItem = function(item, sceneName)
-{
-	if (!sceneName) {
-		sceneName = this.currScene;
+		this.getEventManager().fire('createscene', this, this, name);
+
+		return this;
 	}
 
-	if (!(sceneName in this.rp)) {
-		throw new Error(Engine.Util.format("No such scene '{0}'", sceneName));
+
+	//
+	// return Scene object
+	//
+	// @param string name - scene name
+	//
+	this.scene = function(name)
+	{
+		if (!(name in this.rp)) {
+			throw new Error(Engine.Util.format("No such scene '{0}'", name));
+		}
+
+		return this.rp[name];
 	}
 
-	this.rp[sceneName].push(item);
-	return true;
-}
 
-
-//
-// removes item from render pipe
-//
-// @chainable
-// @param Object item - item for removal
-// @return bool
-//
-Engine.RenderPipe.prototype.removeItem = function(item, sceneName)
-{
-	// remove only if it's safe
-	if (!this._rendering) {
+	//
+	// adds renderable item (object must have .render() and .update() methods)
+	//
+	// @chainable
+	// @param Object item - object to display
+	// @param string sceneName - scene name, if not given - current scene
+	// @param string layerName - layer name, if not given - default layer is used
+	//
+	this.addItem = function(item, sceneName, layerName)
+	{
 		if (!sceneName) {
 			sceneName = this.currScene;
 		}
 
-		var pos = this.rp[sceneName].indexOf(item);
-		if (pos != -1) {
-			var start = this.rp[sceneName].slice(0, pos);
-			var end = this.rp[sceneName].slice(pos + 1);
-			this.rp[sceneName] = start.concat(end);
-
-			return this;
-		}
-	}
-	else {
-		this._garbage.push(item);
-	}
-
-    return this;
-}
-
-
-//
-// renders all current scene's items
-//
-// @chainable
-//
-Engine.RenderPipe.prototype.render = function()
-{
-	this._rendering = true;
-	var sceneName = this.currScene;
-	for (var i = 0, len = this.rp[sceneName].length; i < len; i += 1 ) {
-		if (this.rp[sceneName][i]) {
-			this.rp[sceneName][i].render();
-		}
-		else {
-			console.log("NULL ITEM IN RENDER PIPE!");
-		}
-	}
-
-	this._rendering = false;
-	if (this._garbage.length > 0) {
-		for (var k = 0, max = this._garbage.length; k < max; k++) {
-			this.removeItem(this._garbage[k]);
+		if (!(sceneName in this.rp)) {
+			throw new Error(Engine.Util.format("No such scene '{0}'", sceneName));
 		}
 
-		this._garbage = [];
+		///this.rp[sceneName].push(item);
+		this.rp[sceneName].addItem(item, layerName);
+		item.scene = sceneName;
+		return true;
+
+
 	}
 
-	return this;
-}
 
+	//
+	// removes item from render pipe
+	//
+	// @chainable
+	// @param Object item - item for removal
+	// @return bool
+	//
+	this.removeItem = function(item, sceneName)
+	{
+		if (!sceneName) {
+			sceneName = this.currScene;
+		}
+		this.rp[sceneName].removeItem(item);
 
-//
-// remove all entities from given scene
-//
-// @chainable
-// @param string sceneName - scene name
-//
-Engine.RenderPipe.prototype.clearScene = function(sceneName)
-{
-	/*
-	for (var i = 0, len = this.rp[sceneName].length; i < len; i += 1 ) {
-		this.removeItem(this.rp[sceneName][i], sceneName);
+		return this;
 	}
-	*/
-	this.rp[sceneName] = [];
+
+
+	//
+	// updates all current scene's items
+	//
+	// @chainable
+	//
+	this.update = function()
+	{
+		var scene = this.currScene;
+		this.rp[scene].update();
+
+		return this;
+	}
+
+
+	//
+	// renders all current scene's items
+	//
+	// @chainable
+	//
+	this.render = function()
+	{
+		_rendering = true;
+		var sceneName = this.currScene;
+		this.rp[sceneName].render();
+
+		_rendering = false;
+
+		// remove entities if requested any
+		if (_garbage.length > 0) {
+			for (var k = 0, max = _garbage.length; k < max; k++) {
+				this.removeItem(_garbage[k]);
+			}
+
+			_garbage = [];
+		}
+
+		return this;
+	}
+
+
+	//
+	// remove all entities from given scene
+	//
+	// @chainable
+	// @param string sceneName - scene name
+	//
+	this.clearScene = function(sceneName)
+	{
+		///this.rp[sceneName] = [];
+		this.rp[sceneName] = new Scene();
+		return this;
+	}
+
 	return this;
 }

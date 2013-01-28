@@ -32,7 +32,6 @@ Engine.GuiProgress = function(bodySprite, stepSprite, gameObject)
 	this.border = 1;
 	this.visible = true;
 
-
 	this.render = function()
 	{
 		if (!this.visible) {
