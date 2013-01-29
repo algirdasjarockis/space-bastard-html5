@@ -25,8 +25,9 @@ Engine.GuiSystem = function(gameObject)
 // @chainable
 // @param Object item - gui object
 // @param string scene - scene name (if not given, current scene is used)
+// @param string layer - layer name
 //
-Engine.GuiSystem.prototype.addItem = function(item, scene)
+Engine.GuiSystem.prototype.addItem = function(item, scene, layer)
 {
 	if (!scene) {
 		scene = this._world.scene();
@@ -40,7 +41,7 @@ Engine.GuiSystem.prototype.addItem = function(item, scene)
 	}
 
 	this.scenes[scene].push(item);
-	this._rp.addItem(item, scene);
+	this._rp.addItem(item, scene, layer);
 
 	return this;
 }

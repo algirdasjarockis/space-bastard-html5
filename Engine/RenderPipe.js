@@ -127,11 +127,20 @@ Engine.RenderPipe = function()
 		//
 		this.removeItem = function(item)
 		{
+			if (!item) {
+				return this;
+			}
+
 			var layer = _defaultLayer;
 			// remove only if it's safe
-			if (!_rendering) {
+			if (self.currScene !== item.scene || !_rendering) {
 				if (item.layer) {
 					layer = item.layer;
+				}
+
+				if (!(layer in _layers)) {
+					console.log(_layers);
+					throw new Error(Engine.Util.format("No such layer '{0}'", layer));
 				}
 
 				var pos = _layers[layer].indexOf(item);
@@ -148,6 +157,54 @@ Engine.RenderPipe = function()
 			}
 
 			return this;
+		}
+
+
+		//
+		// removes given layers items
+		//
+		// @chainable
+		// @param string layer - layer name
+		//
+		this.clearLayer = function(layer)
+		{
+			if (!(layer in _layers)) {
+				throw new Error(Engine.Util.format("No such layer '{0}' for clearing", layer));
+			}
+
+			for (var i = 0, max = _layers[layer].length; i < max; i += 1) {
+				_layers[layer][i].removeFromCollisions();
+			}
+
+			_layers[layer] = [];
+
+			return this;
+		}
+
+
+		//
+		// removes layer
+		//
+		// @chainable
+		// @param string layer - layer name
+		//
+		this.removeLayer = function(layer)
+		{
+			this.clearLayer(layer);
+			delete _layers[layer];
+		}
+
+
+		//
+		// clears this scene (clears all layers)
+		//
+		// @chainable
+		//
+		this.clear = function()
+		{
+			for (var layer in _layers) {
+				this.clearLayer(layer);
+			}
 		}
 
 
@@ -328,8 +385,14 @@ Engine.RenderPipe = function()
 	//
 	this.clearScene = function(sceneName)
 	{
-		///this.rp[sceneName] = [];
-		this.rp[sceneName] = new Scene();
+		if (!sceneName) {
+			sceneName = this.currScene;
+		}
+		if (!(sceneName in this.rp)) {
+			throw new Error(Engine.Util.format("No such scene '{0}'", sceneName));
+		}
+
+		this.rp[sceneName].clear();
 		return this;
 	}
 

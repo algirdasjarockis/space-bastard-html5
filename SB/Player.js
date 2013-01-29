@@ -20,7 +20,7 @@ SB.Player = function()
 	// our bastard hero
 	_hero = game.ent.hero = SB.GameEntity(new Engine.Entity("hero", game)
 		.set({type: 'hero', maxHealth: 1000, health: 1000, weight: 200})
-		.addToRenderPipe('main')
+		.addToRenderPipe('main', 'hero')
 		.on('collide', function(item) {
 			//this.removeFromCollisions();
 			if (item.type == "enemy") {
@@ -39,7 +39,10 @@ SB.Player = function()
 			}
 		})
 		.on('die', function() {
+			game.rp.scene('main').clearLayer('game-entities');
 			game.scene("game-over");
+			_hero.health = _hero.maxHealth;
+			self.ammo = 0;
 		})
 		.on('lastframe', function() {
 			// respawn

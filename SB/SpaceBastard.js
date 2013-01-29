@@ -161,7 +161,7 @@ var SB = {
 
 		// create empty scenes
 		// render pipeline for game
-		rp.createScene("main", {layers: ['bg', 'game-entities', 'ui'], defaultLayer: 'game-entities'})
+		rp.createScene("main", {layers: ['bg', 'hero', 'game-entities', 'ui'], defaultLayer: 'game-entities'})
 			// render pipeline for main menu scene
 			.createScene("main-menu")
 			// render pipeline for pause menu
@@ -248,9 +248,9 @@ var SB = {
 					.volume('', 0.05); // set very low volume for a while :)
 
 				// create game over scene
-				game.ent.buttonRestart = new Engine.GuiButton("menuButton1", game);
+				game.ent.buttonRestart = new Engine.GuiButton("pauseMenuBtn1", game);
 				game.ent.buttonRestart
-					.x(400).y(240)
+					.x(600).y(240)
 					.set({
 						text: "Restart",
 						captionFont: {
@@ -268,15 +268,34 @@ var SB = {
 						}
 					})
 					.on('click', function() {
-						console.log('click');
-						// show loading screen
 						game.sm.play("click");
-						//SB.game.removeSceneEntities('main');
 						game.scene('main');
 
 						SB.level.run();
-						// load level
-						//SB.level.load(1);
+					});
+				game.ent.buttonGameOverToMenu = new Engine.GuiButton("pauseMenuBtn1", game);
+				game.ent.buttonGameOverToMenu
+					.x(620).y(325)
+					.set({
+						text: "Main Menu",
+						captionFont: {
+							normal: "20px Arial",
+							hover: "20px Arial bold"
+						},
+						captionColor: {
+							normal: "#ffffff",
+							hover: "#ff0000"
+						},
+						captionAlign: "center",
+						captionMargin: {
+							top: 0, right: 0, bottom: 0,
+							left: -10
+						}
+					})
+					.on('click', function() {
+						game.sm.play("click");
+						game.scene('main-menu');
+						game.rp.clearScene('main');
 					});
 			});
 
@@ -302,7 +321,7 @@ var SB = {
 				.on('click', function() {
 					game.sm.play("click");
 					game.scene("main");
-				})
+				});
 
 			SB.gui.addItem(game.ent.pauseMenuBtn1, "pause-menu")
 				.addItem(game.ent.pointer, "pause-menu");
@@ -332,7 +351,18 @@ var SB = {
 			game.scene('game-over');
 			SB.gui.addItem(SB.level.bg)
 				.addItem(game.ent.buttonRestart)
+				.addItem(game.ent.buttonGameOverToMenu)
 				.addItem(game.ent.pointer);
+			game.ent.gameOverLabel = new Engine.GuiLabel(game);
+			game.ent.gameOverLabel
+				.set({
+					x: 280, y: 110,
+					width: 500,
+					color: "#ffffff",
+					font: "48px Tahoma",
+					text: "Game Over"
+				})
+				.addToRenderPipe("game-over");
 
 			// create player instance
 			self.player = new SB.Player()
