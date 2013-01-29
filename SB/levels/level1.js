@@ -53,7 +53,6 @@ SB.level.setData({
 			},
 			ai: [
 				function(lvl) {
-					// do nothing
 					lvl.ns.enemyWhichMustDie = lvl.spawnEnemy({name: "enemy6", x: 300, y: 100, movement: ["scroll-x"]});
 				}
 			]

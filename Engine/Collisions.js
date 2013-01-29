@@ -55,7 +55,7 @@ Engine.Collisions.prototype.remove = function(group, subgroup, item)
 	// checking if removal was requested somewhere outside during collision detection loop
 	if (!this._inCheck) {
 		if (typeof(this[group]) == "undefined") {
-			console.log("[E] No such collision group '" + group + "' to remove from");
+			console.log("[E] No such collision group '" + group + "' to remove from", item);
 			return false;
 		}
 

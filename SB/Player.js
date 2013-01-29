@@ -39,7 +39,6 @@ SB.Player = function()
 			}
 		})
 		.on('die', function() {
-			game.rp.scene('main').clearLayer('game-entities');
 			game.scene("game-over");
 			_hero.health = _hero.maxHealth;
 			self.ammo = 0;

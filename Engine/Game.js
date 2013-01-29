@@ -116,11 +116,11 @@ Engine.Game = function (canvasElem)
 	{
 		if (sceneName !== undefined) {
 			if (self.rp.currScene != sceneName) {
-				if (!self.getEventManager().fire('scenechange', self, oldScene, sceneName)) {
+				var oldScene = self.rp.currScene;
+				if (!self.getEventManager().fire('beforescenechange', self, oldScene, sceneName)) {
 					// canceled by event
 					return self;
 				}
-				var oldScene = self.rp.currScene;
 
 				// pause current scene timeouts
 				self.pauseAllTimeouts();
@@ -159,24 +159,6 @@ Engine.Game = function (canvasElem)
 		_renderInterval = setInterval(_render, 1000 / _fps);
 
 		self.getEventManager().fire('start');
-		return self;
-	}
-
-
-	//
-	// remove scene entities
-	//
-	// @chainable
-	// @param string sceneName - scene name
-	//
-	self.removeSceneEntities = function(sceneName)
-	{
-		if (!(sceneName in self.rp.rp)) {
-			throw new Error(Engine.Util.format("No such scene '{0}'", sceneName));
-		}
-
-		self.collisions.removeAll();
-		self.rp.clearScene(sceneName);
 		return self;
 	}
 
@@ -245,7 +227,6 @@ Engine.Game = function (canvasElem)
 	//
 	// @chainable
 	// @param string name - timeout's id
-	// @return bool
 	//
 	self.resumeTimeout = function(name)
 	{
@@ -257,6 +238,33 @@ Engine.Game = function (canvasElem)
 		if (_timeouts[scene][name] != undefined) {
 			var tm = _timeouts[scene][name];
 			tm.id = setTimeout(tm.callback, tm.left);
+		}
+
+		return self;
+	}
+
+
+	//
+	// removes timeout
+	//
+	// @chainable
+	// @param sring name - timeout's id
+	// @param bool leaveId - if true - keep timeout object with given id
+	//
+	self.clearTimeout = function(name, leaveId)
+	{
+		var scene = self.rp.currScene;
+		if (!(scene in _timeouts)) {
+			throw new Error(Engine.Util.format("No such timeout '{0}'", scene));
+		}
+
+		if (_timeouts[scene][name] != undefined && _timeouts[scene][name].id) {
+			var tm = _timeouts[scene][name];
+			clearTimeout(tm.id);
+		}
+
+		if (!leaveId) {
+			delete _timeouts[scene][name];
 		}
 
 		return self;
@@ -306,6 +314,36 @@ Engine.Game = function (canvasElem)
 		}
 
 		return self;
+	}
+
+
+	//
+	// clears all timeouts
+	//
+	// @chainable
+	//
+	self.clearAllTimeouts = function()
+	{
+		var scene = self.rp.currScene;
+		if (!scene) {
+			return self;
+		}
+		if (!(scene in _timeouts)) {
+			throw new Error(Engine.Util.format("No such timeout '{0}'", scene));
+		}
+
+		for (var tm in _timeouts[scene]) {
+			self.clearTimeout(tm, true);
+		}
+		_timeouts[scene] = {};
+
+		return self;
+	}
+
+
+	self.getTimeouts = function()
+	{
+		return _timeouts;
 	}
 
 

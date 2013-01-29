@@ -216,7 +216,17 @@ var SB = {
 
 						// once all entities are create start game
 						self.game.scene("main-menu");
-						self.game.on('scenechange', self.onSceneChange);
+						self.game
+							.on('scenechange', self.onSceneChange)
+							.on('beforescenechange', function(prevScene, nextScene) {
+								var scene = prevScene + '.' + nextScene;
+								switch (scene) {
+								case 'game-over.main-menu':
+								case 'pause-menu.main-menu':
+									console.log('-- Clearing all timeouts');
+									self.game.clearAllTimeouts();
+								}
+							});
 
 						// start all loops here
 						self.game.start();
@@ -322,8 +332,25 @@ var SB = {
 					game.sm.play("click");
 					game.scene("main");
 				});
+			game.ent.pauseToMenu = new Engine.GuiButton("pauseMenuBtn1", game);
+			game.ent.pauseToMenu.captionColor.hover = "#555555";
+			game.ent.pauseToMenu.captionMargin.left = -10;
+			game.ent.pauseToMenu.x(620).y(325)
+				.set({
+					captionAlign: 'center',
+					text: 'Main Menu',
+					captionFont: {
+						normal: "20px Arial",
+						hover: "20px Arial bold"
+					}
+				})
+				.on('click', function() {
+					game.sm.play("click");
+					game.scene("main-menu");
+				});
 
 			SB.gui.addItem(game.ent.pauseMenuBtn1, "pause-menu")
+				.addItem(game.ent.pauseToMenu, "pause-menu")
 				.addItem(game.ent.pointer, "pause-menu");
 
 			// other useful items
@@ -366,7 +393,7 @@ var SB = {
 
 			// create player instance
 			self.player = new SB.Player()
-				.set({score: 0});
+				.set({score: 0, ammo: 0});
 
 			game.scene('main');
 			SB.level.run();
@@ -439,10 +466,19 @@ var SB = {
 			SB.game.sm.play("level1");
 			break;
 
+		case 'main.game-over':
+			SB.game.rp.scene('main').clearLayer('game-entities');
+			break;
+
+		case 'pause-menu.main-menu':
+			SB.game.rp.scene('main').clearLayer('game-entities');
+		case 'game-over.main-menu':
+			SB.level.unload();
+			break;
+
 		case 'main.main-menu':
 			SB.game.ent.pointer.x(SB.game.ent.hero.x());
 			SB.game.ent.pointer.y(SB.game.ent.hero.y());
-			SB.game.removeSceneEntities('main');
 			SB.game.sm.pauseAll();
 			SB.game.sm.play("mainTheme");
 			break;

@@ -14,6 +14,16 @@ SB.Level = function() {
 
 	_ssm.setDir('img/sprites/');
 
+	function _nextBlock()
+	{
+		console.log('---> curr block: ', _blockNo);
+		return (_blockNo += 1);
+	}
+
+
+	var _onBeforeUpdate = null;
+
+
 	//
 	// process one wave block
 	//
@@ -68,7 +78,8 @@ SB.Level = function() {
 			// increase it more for next timeouts
 			_lvlInterval += duration;
 
-			if ((_blockNo += 1) >= _lvlData.waves.length) {
+			//if ((_blockNo += 1) >= _lvlData.waves.length) {
+			if (_nextBlock() >= _lvlData.waves.length) {
 				// it's last block
 				SB.game.addTimeout("level_finish", function() {
 					self.getEventManager().fire('finish', self);
@@ -94,10 +105,13 @@ SB.Level = function() {
 				if (callback() === true) {
 					// boss died
 					console.log('BOSS DIED!');
+					_onBeforeUpdate = null;
 					SB.game.getEventManager().unregister('beforeupdate', onBeforeUpdate);
 
 
-					if ((_blockNo += 1) >= _lvlData.waves.length) {
+					//if ((_blockNo += 1) >= _lvlData.waves.length) {
+					if (_nextBlock() >= _lvlData.waves.length) {
+						console.log(_blockNo, _lvlData.waves);
 						// it's last block
 						self.getEventManager().fire('finish', self, self);
 					}
@@ -108,6 +122,7 @@ SB.Level = function() {
 				}
 			}
 
+			_onBeforeUpdate = onBeforeUpdate;
 			SB.game.on('beforeupdate', onBeforeUpdate);
 		}
 	}
@@ -177,6 +192,24 @@ SB.Level = function() {
 
 
 	//
+	// Unloads level
+	//
+	self.unload = function()
+	{
+		_lvlData = null;
+		_blockNo = 0;
+
+		var path = "SB/levels/level" + _levelNo + ".js";
+		Engine.Util.unloadJs(path);
+
+		if(_onBeforeUpdate) {
+			SB.game.getEventManager().unregister('beforeupdate', _onBeforeUpdate);
+			_onBeforeUpdate = null;
+		}
+	}
+
+
+	//
 	//
 	//
 	self.getNumber = function()
@@ -208,6 +241,11 @@ SB.Level = function() {
 		if (!_lvlData) {
 			console.log('Empty level!');
 			return false;
+		}
+
+		if(_onBeforeUpdate) {
+			SB.game.getEventManager().unregister('beforeupdate', _onBeforeUpdate);
+			_onBeforeUpdate = null;
 		}
 
 		if (!self.getEventManager().fire('beforestart', self)) {

@@ -68,6 +68,9 @@ Engine.EventManager.prototype.unregister = function(evtName, callback)
 		var end = cbs.slice(pos + 1);
 		this._callbacks[evtName] = start.concat(end);
 	}
+	else {
+		console.log("======= Callback not found:", callback, this._callbacks[evtName]);
+	}
 
 	return this;
 }

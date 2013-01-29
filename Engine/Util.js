@@ -45,6 +45,27 @@ Engine.Util = {
 
 
 	//
+	// removes js script from DOM by given src attribute
+	//
+	// @param string path - script path
+	// @return bool - true on succesfull deletion
+	//
+	unloadJs: function(path)
+	{
+		var el = document.querySelector('script[src="' + path + '"]');
+		if (el) {
+			if (!el.parentNode.removeChild(el)) {
+				return false;
+			}
+
+			return true;
+		}
+
+		return false;
+	},
+
+
+	//
 	// gets random integer value in range [min, max]
 	//
 	// @param int min - min value
