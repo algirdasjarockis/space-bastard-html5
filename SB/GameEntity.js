@@ -160,7 +160,7 @@ SB.GameEntity = function(entity)
 				.addToCollisions(entity.type == 'enemy' ? 'enemies' : 'friends')
 				.on('update', function() {
 					var y = this.y();
-					if (y <= -10) {
+					if (y <= -10 || y >= SB.game.canvas.height + 20) {
 						this.removeFromRenderPipe()
 							.removeFromCollisions();
 						return;

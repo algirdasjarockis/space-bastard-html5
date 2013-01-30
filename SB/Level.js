@@ -108,7 +108,6 @@ SB.Level = function() {
 					_onBeforeUpdate = null;
 					SB.game.getEventManager().unregister('beforeupdate', onBeforeUpdate);
 
-
 					//if ((_blockNo += 1) >= _lvlData.waves.length) {
 					if (_nextBlock() >= _lvlData.waves.length) {
 						console.log(_blockNo, _lvlData.waves);

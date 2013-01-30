@@ -180,12 +180,19 @@ Engine.Game = function (canvasElem)
 		}
 
 		_timeouts[scene][name] = {
-			id: setTimeout(callback, timeout),
+			//id: setTimeout(callback, timeout),
+			id: 0,
 			started: (new Date()).getTime(),
 			left: 0,
 			timeout: timeout,
 			callback: callback
 		}
+
+		var tm = _timeouts[scene][name];
+		tm.id = setTimeout(function() {
+			delete _timeouts[scene][name];
+			callback();
+		}, timeout);
 
 		return self;
 	}
@@ -208,11 +215,14 @@ Engine.Game = function (canvasElem)
 
 		if (_timeouts[scene][name] != undefined && _timeouts[scene][name].id) {
 			var tm = _timeouts[scene][name];
+
 			clearTimeout(tm.id);
 			tm.id = 0;
-			tm.left = tm.timeout - ((new Date()).getTime() - tm.started) / 1000;
+			tm.left = tm.timeout - ((new Date()).getTime() - tm.started);
+			//console.log('###---', tm.timeout, tm.left, (new Date()).getTime() - tm.started);
+			tm.timeout = tm.left;
 
-			if (tm.left <= 0) {
+			if (tm.left < 0) {
 				console.log(Engine.Util.format("Removing old timeout '{0}' at pauseTimeout", name));
 				delete _timeouts[scene][name];
 			}
@@ -237,7 +247,9 @@ Engine.Game = function (canvasElem)
 
 		if (_timeouts[scene][name] != undefined) {
 			var tm = _timeouts[scene][name];
+			//console.log('###+++', tm.callback, tm.left);
 			tm.id = setTimeout(tm.callback, tm.left);
+			tm.started = (new Date()).getTime();
 		}
 
 		return self;

@@ -467,12 +467,14 @@ var SB = {
 			break;
 
 		case 'main.game-over':
+			SB.game.collisions.removeAll();
 			SB.game.rp.scene('main').clearLayer('game-entities');
 			break;
 
 		case 'pause-menu.main-menu':
-			SB.game.rp.scene('main').clearLayer('game-entities');
+			//SB.game.rp.scene('main').clearLayer('game-entities');
 		case 'game-over.main-menu':
+			SB.game.rp.clearScene('main');
 			SB.level.unload();
 			break;
 

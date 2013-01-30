@@ -172,9 +172,9 @@ Engine.RenderPipe = function()
 				throw new Error(Engine.Util.format("No such layer '{0}' for clearing", layer));
 			}
 
-			for (var i = 0, max = _layers[layer].length; i < max; i += 1) {
-				_layers[layer][i].removeFromCollisions();
-			}
+			//for (var i = 0, max = _layers[layer].length; i < max; i += 1) {
+			//	_layers[layer][i].removeFromCollisions();
+			//}
 
 			_layers[layer] = [];
 
