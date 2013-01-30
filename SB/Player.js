@@ -25,6 +25,8 @@ SB.Player = function()
 			//this.removeFromCollisions();
 			if (item.type == "enemy") {
 				this.addHealth(-(item.weight / this.weight * this.maxHealth));
+				item.addHealth(-(this.weight / item.weight * item.maxHealth));
+				console.log('OUCH', item.weight, this.weight);
 			}
 			else if (item.type == "ammo") {
 				this.addHealth(-item.damage);
@@ -51,11 +53,6 @@ SB.Player = function()
 				game.ent.hero.addToCollisions("friends");
 			}
 		}));
-
-	// hero is invincible for some time
-	setTimeout(function() {
-		game.ent.hero.addToCollisions("friends");
-	}, 3000);
 
 	// some event catching
 	SB.game
@@ -100,6 +97,31 @@ SB.Player = function()
 		SB.ammoData[self.ammo].ratio = 4;
 		SB.ammoData[self.ammo].side = 'friends';
 		_hero.shoot(SB.ammoData[self.ammo]);
+	}
+
+
+	//
+	// make hero invincible for given miliseconds
+	//
+	// @chainable
+	// @param int msec - duration in miliseconds
+	//
+	this.spawnProtection = function(msec)
+	{
+		// hero is invincible for some time
+		if (!msec) {
+			msec = 3000;
+		}
+
+		game.ent.hero
+			.set({_collisionGroup: 'friends'})
+			.removeFromCollisions();
+
+		game.addTimeout('spawnprotect', function() {
+			game.ent.hero.addToCollisions("friends");
+		}, msec);
+
+		return self;
 	}
 
 	return self;

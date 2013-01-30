@@ -329,7 +329,12 @@ Engine.RenderPipe = function()
 	this.removeItem = function(item, sceneName)
 	{
 		if (!sceneName) {
-			sceneName = this.currScene;
+			if (item.scene) {
+				sceneName = item.scene;
+			}
+			else {
+				sceneName = this.currScene;
+			}
 		}
 		this.rp[sceneName].removeItem(item);
 

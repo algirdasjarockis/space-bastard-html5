@@ -233,10 +233,29 @@ Engine.Entity = function (sprite, gameObject)
 
 		var oldHealth = this.health;
 		this.health += val;
+
+		if (this.health > this.maxHealth){
+			this.health = this.maxHealth;
+		}
+
 		this.getEventManager().fire('healthchange', this, this, oldHealth, val);
 		if (this.health <= 0) {
 			this.getEventManager().fire('die', this, this);
 		}
+
+		return this;
+	}
+
+
+	//
+	// refills health to max
+	//
+	// @chainable
+	//
+	this.refillHealth = function()
+	{
+		var missingHp = this.maxHealth - this.health;
+		this.addHealth(missingHp);
 
 		return this;
 	}

@@ -29,6 +29,21 @@ Engine.SoundManager = function()
 
 
 	//
+	// pause all sounds and play only given one
+	//
+	// @chainable
+	// @param string handle - handle name
+	//
+	self.playOne = function(handle)
+	{
+		self.pauseAll();
+		self.play(handle);
+
+		return self;
+	}
+
+
+	//
 	// pause sound by given handle
 	//
 	// @chainable

@@ -47,6 +47,7 @@ var SB = {
 		enemy1: {
 			sprite: 'enemy1',
 			health: 100,
+			weight: 20,
 			ammo: {
 				sprite: "enemyAmmo1",
 				damage: 20,
@@ -58,6 +59,7 @@ var SB = {
 		enemy2: {
 			sprite: "enemy2",
 			health: 150,
+			weight: 20,
 			ammo: {
 				sprite: "enemyAmmo1",
 				damage: 5,
@@ -69,6 +71,7 @@ var SB = {
 		enemy3: {
 			sprite: "enemy3",
 			health: 75,
+			weight: 15,
 			ammo: {
 				sprite: "enemyAmmo1",
 				damage: 75,
@@ -80,6 +83,7 @@ var SB = {
 		enemy4: {
 			sprite: "enemy4",
 			health: 75,
+			weight: 25,
 			ammo: {
 				sprite: "enemyAmmo1",
 				damage: 50,
@@ -91,6 +95,7 @@ var SB = {
 		enemy5: {
 			sprite: "enemy5",
 			health: 2000,
+			weight: 150,
 			ammo: {
 				sprite: "ammo1",
 				damage: 150,
@@ -102,6 +107,7 @@ var SB = {
 		enemy6: {
 			sprite: "enemy6",
 			health: 1300,
+			weight: 120,
 			ammo: {
 				sprite: "enemyAmmoMine",
 				damage: 200,
@@ -113,6 +119,7 @@ var SB = {
 		enemy7: {
 			sprite: "enemy7",
 			health: 3000,
+			weight: 300,
 			ammo: {
 				sprite: "enemyAmmo1",
 				damage: 50
@@ -139,6 +146,7 @@ var SB = {
 			rp = game.rp;
 
 		self.canvasId = canvasId;
+		game.collisions.createSubgroup('friends', 'main');
 
 		// create gui system
 		self.gui = new Engine.GuiSystem(self.game);
@@ -311,6 +319,10 @@ var SB = {
 
 		// some callbacks
 		SB.level.on('load', function() {
+			// clear scenes if it was created from previous level load
+			game.rp.clearScene('pause-menu');
+			game.rp.clearScene('game-over');
+
 			// create some entities that are not managed by level
 			SB.gui.addItem(SB.level.bg, 'main', 'bg');
 
@@ -375,11 +387,11 @@ var SB = {
 				});
 
 			// set game over scene
-			game.scene('game-over');
-			SB.gui.addItem(SB.level.bg)
-				.addItem(game.ent.buttonRestart)
-				.addItem(game.ent.buttonGameOverToMenu)
-				.addItem(game.ent.pointer);
+			//game.scene('game-over');
+			SB.gui.addItem(SB.level.bg, 'game-over')
+				.addItem(game.ent.buttonRestart, 'game-over')
+				.addItem(game.ent.buttonGameOverToMenu, 'game-over')
+				.addItem(game.ent.pointer, 'game-over');
 			game.ent.gameOverLabel = new Engine.GuiLabel(game);
 			game.ent.gameOverLabel
 				.set({
@@ -397,6 +409,13 @@ var SB = {
 
 			game.scene('main');
 			SB.level.run();
+		})
+		.on('start', function() {
+			console.log('-- level started --');
+			game.ent.hero.refillHealth();
+			self.player
+				.spawnProtection(3000)
+				.set({score: 0, ammo: 0});
 		})
 	},
 
@@ -450,18 +469,19 @@ var SB = {
 	},
 
 
-
-
+	//
+	// scene change callback
+	//
 	onSceneChange: function(from, to)
 	{
 		var sc = from + "." + to;
+
 		switch (sc) {
 		case 'main-menu.loading-screen':
 			SB.game.sm.pauseAll();
 			break;
 		case 'loading-screen.main':
 			// game start
-			console.log("go go go!");
 			SB.game.sm.pause("mainTheme");
 			SB.game.sm.play("level1");
 			break;
@@ -476,13 +496,13 @@ var SB = {
 		case 'game-over.main-menu':
 			SB.game.rp.clearScene('main');
 			SB.level.unload();
+			SB.game.sm.playOne('mainTheme');
 			break;
 
 		case 'main.main-menu':
 			SB.game.ent.pointer.x(SB.game.ent.hero.x());
 			SB.game.ent.pointer.y(SB.game.ent.hero.y());
-			SB.game.sm.pauseAll();
-			SB.game.sm.play("mainTheme");
+			SB.game.sm.playOne("mainTheme");
 			break;
 
 		case 'main.pause-menu':
@@ -491,8 +511,7 @@ var SB = {
 			break;
 
 		case 'pause-menu.main':
-			SB.game.sm.pauseAll();
-			SB.game.sm.play("level1");
+			SB.game.sm.playOne("level1");
 			break;
 		}
 	},

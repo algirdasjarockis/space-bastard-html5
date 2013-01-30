@@ -16,7 +16,6 @@ SB.Level = function() {
 
 	function _nextBlock()
 	{
-		console.log('---> curr block: ', _blockNo);
 		return (_blockNo += 1);
 	}
 

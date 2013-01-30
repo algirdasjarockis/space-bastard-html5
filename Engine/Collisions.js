@@ -21,6 +21,22 @@ Engine.Collisions = function()
 
 
 //
+// create subgroup of given collision group
+//
+// @param string group - group name
+// @param string subgroup - subgroup name
+//
+Engine.Collisions.prototype.createSubgroup = function(group, subgroup)
+{
+	if (!(group in this)) {
+		throw new Error(Engine.Util.format("No such group '{0}'", group));
+	}
+
+	this[group][subgroup] = [];
+}
+
+
+//
 // adds item to collision by given it's name
 //
 // @param string group - group name
@@ -47,6 +63,7 @@ Engine.Collisions.prototype.add = function(group, subgroup, item)
 // removes item from collision list by given group's name
 //
 // @param string group - group name
+// @param string subgroup - subgroup name
 // @param Object item - object
 // @return bool
 //
@@ -81,7 +98,9 @@ Engine.Collisions.prototype.remove = function(group, subgroup, item)
 
 
 //
-// search for any collision in all lists
+// search for any collision in given subgroup
+//
+// @param string subgroup - subgroup name
 //
 Engine.Collisions.prototype.check = function(subgroup)
 {
@@ -91,6 +110,9 @@ Engine.Collisions.prototype.check = function(subgroup)
 
 	function collision(c1, c2)
 	{
+		if (!c1 || !c2) {
+			return false;
+		}
 		// for getting center coordinates
 		var hw1 = c1.width() / 2;
 		var hh1 = c1.height() / 2;
@@ -136,12 +158,15 @@ Engine.Collisions.prototype.removeAll = function()
 	for (var i = 0, max = groups.length; i < max; i += 1) {
 		var subgroups = this[groups[i]];
 		for (var subgroup in subgroups) {
+			subgroups[subgroup] = [];
+			/*
 			for (var j = 0, len = subgroups[subgroup].length; j < len; j += 1) {
 				var item = subgroups[subgroup][j];
 				this.remove(groups[i], subgroup, item);
-			}
+			} */
 		}
 	}
+
 	/*
 	for (var i = 0, max = groups.length; i < max; i += 1) {
 		for (var j = 0, len = this[groups[i]].length; j < len; j += 1) {
