@@ -218,9 +218,7 @@ var SB = {
 							});
 
 						game.ent.pointer = new Engine.GuiPointer("pointer", game);
-						SB.gui.addItem(game.bg.mainMenu)
-							.addItem(game.ent.buttonStart)
-							.addItem(game.ent.pointer);
+						SB.gui.addToRenderPipe([game.bg.mainMenu, game.ent.buttonStart, game.ent.pointer]);
 
 						// once all entities are create start game
 						self.game.scene("main-menu");
@@ -324,10 +322,10 @@ var SB = {
 			game.rp.clearScene('game-over');
 
 			// create some entities that are not managed by level
-			SB.gui.addItem(SB.level.bg, 'main', 'bg');
+			SB.gui.addToRenderPipe(SB.level.bg, 'main', 'bg');
 
 			// create gui for pause menu
-			SB.gui.addItem(SB.level.bg, 'pause-menu');
+			SB.gui.addToRenderPipe(SB.level.bg, 'pause-menu');
 			game.ent.pauseMenuBtn1 = new Engine.GuiButton("pauseMenuBtn1", game);
 			game.ent.pauseMenuBtn1.captionColor.hover = "#555555";
 			game.ent.pauseMenuBtn1.captionMargin.left = -10;
@@ -361,9 +359,7 @@ var SB = {
 					game.scene("main-menu");
 				});
 
-			SB.gui.addItem(game.ent.pauseMenuBtn1, "pause-menu")
-				.addItem(game.ent.pauseToMenu, "pause-menu")
-				.addItem(game.ent.pointer, "pause-menu");
+			SB.gui.addToRenderPipe([game.ent.pauseMenuBtn1, game.ent.pauseToMenu, game.ent.pointer], 'pause-menu');
 
 			// other useful items
 			game.ent.label1 = new Engine.GuiLabel(game);
@@ -386,12 +382,8 @@ var SB = {
 					pg.value = game.ent.hero.health / game.ent.hero.maxHealth * 100;
 				});
 
-			// set game over scene
-			//game.scene('game-over');
-			SB.gui.addItem(SB.level.bg, 'game-over')
-				.addItem(game.ent.buttonRestart, 'game-over')
-				.addItem(game.ent.buttonGameOverToMenu, 'game-over')
-				.addItem(game.ent.pointer, 'game-over');
+			// set up game over scene
+			SB.gui.addToRenderPipe([SB.level.bg, game.ent.buttonRestart, game.ent.buttonGameOverToMenu, game.ent.pointer], 'game-over');
 			game.ent.gameOverLabel = new Engine.GuiLabel(game);
 			game.ent.gameOverLabel
 				.set({
@@ -430,7 +422,7 @@ var SB = {
 			.on('mousemove', function(game, e) {
 				if (game.scene() != 'main') {
 					game.ent.pointer.x(e.clientX).y(e.clientY);
-					self.gui.onMouseMove(e);
+					self.gui.processMouseMove(e);
 				}
 			})
 			.on('mouseout', function(game, e) {
@@ -442,7 +434,7 @@ var SB = {
 			})
 			.on('click', function(game, e) {
 				if (game.scene() != 'main') {
-					self.gui.onClick(e);
+					self.gui.processMouseClick(e);
 				}
 			});
 	},

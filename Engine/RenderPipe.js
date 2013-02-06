@@ -34,7 +34,7 @@ Engine.RenderPipe = function()
 			_order = [];
 
 		// for debugging purposes
-		this.getItems = function()
+		this.getLayers = function()
 		{
 			return _layers;
 		}
@@ -157,6 +157,25 @@ Engine.RenderPipe = function()
 			}
 
 			return this;
+		}
+
+
+		//
+		// return raw items
+		//
+		// @param array layerName - if given, return layer's items, if not - all
+		// @return Engine.Entity[]
+		//
+		this.getItems = function(layerNames)
+		{
+			var items = [];
+			for (var layer in _layers) {
+				if (!layerNames || layerNames.indexOf(layer) != -1) {
+					items = items.concat(_layers[layer]);
+				}
+			}
+
+			return items;
 		}
 
 
@@ -310,9 +329,15 @@ Engine.RenderPipe = function()
 			throw new Error(Engine.Util.format("No such scene '{0}'", sceneName));
 		}
 
-		///this.rp[sceneName].push(item);
-		this.rp[sceneName].addItem(item, layerName);
-		item.scene = sceneName;
+		if (!Engine.Util.isArray(item)) {
+			item = [item];
+		}
+
+		for (var i = 0, max = item.length; i < max; i += 1) {
+			this.rp[sceneName].addItem(item[i], layerName);
+			item[i].scene = sceneName;
+		}
+		//item.scene = sceneName;
 		return true;
 
 
@@ -339,6 +364,41 @@ Engine.RenderPipe = function()
 		this.rp[sceneName].removeItem(item);
 
 		return this;
+	}
+
+
+	//
+	// get items by given filter
+	//
+	// @param object filterSpecs - filter specs, if falsy - returns all items
+	//					@config string[] scenes - filter by scene names
+	//					@config string[] layers - filter by layer names
+	//					@config Function[] instances - filter by instances
+	//
+	this.getItems = function(filterSpecs)
+	{
+		var tempItems = [],
+			items = [],
+			fs = filterSpecs || {};
+
+		for (var scene in self.rp) {
+			if (!fs.scenes || fs.scenes.indexOf(scene) != -1) {
+				tempItems = tempItems.concat(this.scene(scene).getItems(fs.layers ? fs.layers : false));
+			}
+		}
+
+		if (fs.instances) {
+			for (var i = 0, max = tempItems.length; i < max; i += 1) {
+				if (fs.instances.indexOf(tempItems[i].constructor) != -1) {
+					items.push(tempItems[i]);
+				}
+			}
+		}
+		else {
+			items = items.concat(tempItems);
+		}
+
+		return items;
 	}
 
 
