@@ -7,8 +7,8 @@
 //
 Engine.Background = function(canvas)
 {
-	var self = this;
-	//var _canvas = canvas;
+    var self = this;
+    //var _canvas = canvas;
 	var _ctx = null;
 
 	if (canvas)
@@ -24,36 +24,219 @@ Engine.Background = function(canvas)
 			0, 0, canvas.width, canvas.height);
 	}
 
+
 	function _modeLoop(config)
 	{
 		var defConfig = {
-			speed: 2
+			speed: 0.5,
+			stretch: false,			// should be auto true for smaller image than canvas
+			stretchWidth: false,	// ignored when image is narrower than canvas
+			direction: 1
 		}
 
 		config = Engine.Util.merge(defConfig, config);
 
 		var type = config.type || 'vertical',
-			y = 0,
+			largeImageMode = false,
+
+			// if true, we need to draw "tail"
+			tailActive = false,
+			xRatio = _img.width / canvas.width,
+			yRatio = _img.height / canvas.height,
+			src = {
+				x: 0, y: 0,
+				w: 0, h: 0,
+				sy: 0	// saved starting y position
+			},
+
+			target = {
+				x: 0, y: 0,
+				w: canvas.width,
+				h: canvas.height
+			},
+
+			tailSrc = {
+				x: 0, y: 0,
+				w: 0, h: 0
+			},
+
+			tailTarget = {
+				x: 0, y: 0,
+				w: target.w, h: 0
+			},
+
 			types = {
 				vertical: function() {
-					this.update = function() {
-						if ((y += 1) >= _img.height)
-							y = 0;
+					this.updateFunc = function() {};
+					this.renderFunc = function() {};
+
+					if (config.stretch || _img.height < canvas.height) {
+						// another drawing magic for stretched image
+
+						// both src and tailSrc are full images, so two images are drawn to
+						// achieve maximum smoothness in loop (it very depends when image
+						// is extremely small)
+						src.w = tailSrc.w = _img.width;
+						src.h = tailSrc.h = _img.height;
+
+						target.w = tailTarget.w = canvas.width;
+						target.h = tailTarget.h = canvas.height;
+
+						target.x = tailTarget.x = 0;
+						target.y = 0;
+						// "tail" is right above
+						//tailTarget.y = (config.direction < 0) ? -target.h : target.h;
+						tailTarget.y = config.direction * -target.h;
+
+						// update
+						this.updateFunc = function() {
+							target.y += config.speed * config.direction;
+							tailTarget.y += config.speed * config.direction;
+
+							if ((config.direction < 0 && tailTarget.y <= 0) || (config.direction > 0 && tailTarget.y >= 0)) {
+								// loop end, restart positions
+								target.y = tailTarget.y;
+								tailTarget.y = config.direction * -target.h;
+							}
+						}
+
+						// render
+						this.renderFunc = function() {
+							_ctx.drawImage(_img, src.x, src.y, src.w, src.h,
+								target.x, target.y, target.w, target.h);
+
+							// draw image "tail"
+							_ctx.drawImage(_img, tailSrc.x, tailSrc.y,
+								tailSrc.w, tailSrc.h,
+								tailTarget.x, tailTarget.y, tailTarget.w, tailTarget.h);
+						}
+					}
+					else {
+						var direction = -(config.direction);
+
+						// width issues
+						if (_img.width >= canvas.width) {
+							// image is wider than canvas, need to decide stretching politics
+							src.w = tailSrc.w = (config.stretchWidth) ? _img.width : canvas.width;
+						}
+						else {
+							// image is narrower than canvas, we should force stretch by width
+							src.w = tailSrc.w = _img.width;
+							target.w = tailTarget.w = canvas.width;
+							config.stretchWidth = true;
+						}
+
+						if (direction < 0) {
+							// background moves to bottom
+							src.sy = src.y = (_img.height - canvas.height);
+
+							// update
+							this.updateFunc = function() {
+								src.y += config.speed * direction;
+
+								if (src.y < 0) {
+									src.y = 0;
+									tailActive = true;
+								}
+
+								if (tailActive) {
+									// reached image boundary
+									if ((target.y += -(config.speed * direction)) >= canvas.height) {
+										// current image is fully hidden, we should reset some coords to restart loop
+										tailActive = false;
+
+										src.y = src.sy;
+										target.y = 0;
+									}
+									else {
+										// image portion is shrinking
+										target.h = src.h = canvas.height - target.y;
+
+										// set tail painting coords
+										tailSrc.y = _img.height - target.y
+										tailSrc.h = tailTarget.h = target.y;
+									}
+								}
+								else {
+									target.y = 0;
+									target.h = src.h = canvas.height;
+								}
+							}
+
+							// render
+							this.renderFunc = function() {
+								_ctx.drawImage(_img, src.x, src.y, src.w, src.h,
+									target.x, target.y, target.w, target.h);
+
+								if (tailActive) {
+									// draw image "tail"
+									_ctx.drawImage(_img, tailSrc.x, tailSrc.y,
+										tailSrc.w, tailSrc.h,
+										tailTarget.x, tailTarget.y, tailTarget.w, tailTarget.h);
+								}
+							}
+						}
+						else {
+							// background moves to top
+
+							// background moves to bottom
+							src.sy = src.y = 0;
+							target.y = 0;
+
+							// update
+							this.updateFunc = function() {
+								src.y += config.speed * direction;
+
+								if (_img.height - src.y < canvas.height) {
+									target.h = src.h = _img.height - src.y;
+									tailActive = true;
+								}
+
+								if (tailActive) {
+									// reached image boundary
+									if (target.h <= 0) {
+										// current image is fully hidden, we should reset some coords to restart loop
+										tailActive = false;
+
+										src.y = src.sy;
+										target.y = 0;
+									}
+									else {
+										// image portion is shrinking
+
+										// set tail painting coords
+										tailSrc.y = 0;
+										tailSrc.h = tailTarget.h = canvas.height - src.h;
+										tailTarget.y = target.h;
+									}
+								}
+								else {
+									target.h = src.h = canvas.height;
+								}
+							}
+
+							// render
+							this.renderFunc = function() {
+								_ctx.drawImage(_img, src.x, src.y, src.w, src.h,
+									target.x, target.y, target.w, target.h);
+
+								if (tailActive) {
+									// draw image "tail"
+									_ctx.drawImage(_img, tailSrc.x, tailSrc.y,
+										tailSrc.w, tailSrc.h,
+										tailTarget.x, tailTarget.y, tailTarget.w, tailTarget.h);
+								}
+							}
+						}
 					}
 
-					this.render = function() {
-						_ctx.drawImage(_img, 0, 0, _img.width, _img.height - y,
-							0, y, canvas.width, canvas.height - y);
-
-						_ctx.drawImage(_img, 0, _img.height - y,
-							_img.width, y,
-							0, 0, canvas.width, y);
-					}
+					this.update = this.updateFunc;
+					this.render = this.renderFunc;
 				}
-			}
+			};
 
 		if (!(type in types)) {
-			throw new Error("No such type '{0}' for background curtain mode");
+			throw new Error("No such type '{0}' for background loop mode");
 		}
 
 		var loopObj = new types[type];
@@ -68,6 +251,7 @@ Engine.Background = function(canvas)
 		}
 
 
+
 		//
 		// mode update function
 		//
@@ -75,6 +259,7 @@ Engine.Background = function(canvas)
 		{
 			loopObj.update();
 		}
+
 
 		//
 		// mode render function
@@ -85,11 +270,13 @@ Engine.Background = function(canvas)
 		}
 	}
 
+
 	function _modeCurtain(config)
 	{
 		var _defConfig = {
 			speed: 8
 		};
+
 		var finished = false,
 			finitoCallbackCalled = false;
 
@@ -130,6 +317,7 @@ Engine.Background = function(canvas)
 							rightX = width;
 						}
 					},
+
 
 					//
 					// type render
@@ -178,6 +366,7 @@ Engine.Background = function(canvas)
 			curtainObj.update();
 		}
 
+
 		//
 		// mode render function
 		//
@@ -186,6 +375,7 @@ Engine.Background = function(canvas)
 			curtainObj.render();
 		}
 	}
+
 
 	//
 	// sets mode to background
@@ -227,15 +417,15 @@ Engine.Background = function(canvas)
 	var _mode = 'static',
 		_modeObj = null,
 		_modes = {
-		// @TODO: old mode implementation, should be replaced soon
-		'static': {
-			update: _updateStatic,
-			render: _renderStatic
-		},
-		// new mode implementation which i like. All mode logics must be encapsulated!
-		'curtain': _modeCurtain,
-		'loop': _modeLoop
-	};
+			// @TODO: old mode implementation, should be replaced soon
+			'static': {
+				update: _updateStatic,
+				render: _renderStatic
+			},
+			// new mode implementation which i like. All mode logics must be encapsulated!
+			'curtain': _modeCurtain,
+			'loop': _modeLoop
+		};
 
 	Engine.EventManagerMixin(self);
 	self.registerEvents(['beforeload', 'load', 'finish']);
@@ -264,6 +454,7 @@ Engine.Background = function(canvas)
 
 			self.getEventManager().fire('load', self, self);
 		}
+
 		_img.src = imgUrl;
 		return self;
 	}
@@ -288,3 +479,4 @@ Engine.Background = function(canvas)
 
 	return self;
 }
+

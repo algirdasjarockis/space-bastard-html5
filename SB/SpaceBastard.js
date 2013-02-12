@@ -321,6 +321,9 @@ var SB = {
 			game.rp.clearScene('pause-menu');
 			game.rp.clearScene('game-over');
 
+			// set up main background config
+			SB.level.bg.setMode('loop', {mode: 'vertical', speed: 2, direction: 1});
+
 			// create some entities that are not managed by level
 			SB.gui.addToRenderPipe(SB.level.bg, 'main', 'bg');
 
