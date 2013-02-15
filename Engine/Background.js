@@ -14,8 +14,9 @@ Engine.Background = function(canvas)
 	if (canvas)
 		_ctx = canvas.getContext("2d");
 
-	var _img = null;
-	var _x = 0, _y = 0;
+	var _img = null,
+		_imgs = [],
+		_x = 0, _y = 0;
 
 	// static mode functions
 	var _updateStatic = function() {};
@@ -31,19 +32,17 @@ Engine.Background = function(canvas)
 			speed: 0.5,
 			stretch: false,			// should be auto true for smaller image than canvas
 			stretchWidth: false,	// ignored when image is narrower than canvas
-			direction: 1
+            direction: 1,
+            random: false           // if multiple images are used, render them in random order
 		}
 
 		config = Engine.Util.merge(defConfig, config);
 
 		var type = config.type || 'vertical',
-			largeImageMode = false,
-
 			// if true, we need to draw "tail"
 			tailActive = false,
-			xRatio = _img.width / canvas.width,
-			yRatio = _img.height / canvas.height,
 			src = {
+                imgi: config.random ? Engine.Util.random(0, _imgs.length - 1) : 0,
 				x: 0, y: 0,
 				w: 0, h: 0,
 				sy: 0	// saved starting y position
@@ -56,6 +55,7 @@ Engine.Background = function(canvas)
 			},
 
 			tailSrc = {
+                imgi: config.random ? Engine.Util.random(0, _imgs.length - 1) : (_imgs.length > 1 ? 1 : 0),
 				x: 0, y: 0,
 				w: 0, h: 0
 			},
@@ -65,10 +65,32 @@ Engine.Background = function(canvas)
 				w: target.w, h: 0
 			},
 
+			setNextImages = function()
+			{
+				var len = _imgs.length;
+				if (len > 1) {
+					if ((tailSrc.imgi += 1) >= len) {
+						tailSrc.imgi = 0;
+					}
+					if ((src.imgi += 1) >= len) {
+						src.imgi = 0;
+					}
+				}
+			},
+
+            setRandomImages = function()
+            {
+                var len = _imgs.length;
+				src.imgi = tailSrc.imgi;
+				tailSrc.imgi = Engine.Util.random(0, len - 1);
+
+				console.log(tailSrc.imgi, src.imgi);
+            },
+
 			types = {
 				vertical: function() {
-					this.updateFunc = function() {};
-					this.renderFunc = function() {};
+					this.updateFunc = null;
+					this.renderFunc = null;
 
 					if (config.stretch || _img.height < canvas.height) {
 						// another drawing magic for stretched image
@@ -85,7 +107,6 @@ Engine.Background = function(canvas)
 						target.x = tailTarget.x = 0;
 						target.y = 0;
 						// "tail" is right above
-						//tailTarget.y = (config.direction < 0) ? -target.h : target.h;
 						tailTarget.y = config.direction * -target.h;
 
 						// update
@@ -97,16 +118,24 @@ Engine.Background = function(canvas)
 								// loop end, restart positions
 								target.y = tailTarget.y;
 								tailTarget.y = config.direction * -target.h;
+
+								if (config.random) {
+									setRandomImages();
+								}
+								else {
+									setNextImages();
+								}
 							}
 						}
 
+
 						// render
 						this.renderFunc = function() {
-							_ctx.drawImage(_img, src.x, src.y, src.w, src.h,
+							_ctx.drawImage(_imgs[src.imgi], src.x, src.y, src.w, src.h,
 								target.x, target.y, target.w, target.h);
 
 							// draw image "tail"
-							_ctx.drawImage(_img, tailSrc.x, tailSrc.y,
+							_ctx.drawImage(_imgs[tailSrc.imgi], tailSrc.x, tailSrc.y,
 								tailSrc.w, tailSrc.h,
 								tailTarget.x, tailTarget.y, tailTarget.w, tailTarget.h);
 						}
@@ -147,6 +176,13 @@ Engine.Background = function(canvas)
 
 										src.y = src.sy;
 										target.y = 0;
+
+                                        if (config.random) {
+                                            setRandomImages();
+                                        }
+                                        else {
+                                            setNextImages();
+                                        }
 									}
 									else {
 										// image portion is shrinking
@@ -162,24 +198,9 @@ Engine.Background = function(canvas)
 									target.h = src.h = canvas.height;
 								}
 							}
-
-							// render
-							this.renderFunc = function() {
-								_ctx.drawImage(_img, src.x, src.y, src.w, src.h,
-									target.x, target.y, target.w, target.h);
-
-								if (tailActive) {
-									// draw image "tail"
-									_ctx.drawImage(_img, tailSrc.x, tailSrc.y,
-										tailSrc.w, tailSrc.h,
-										tailTarget.x, tailTarget.y, tailTarget.w, tailTarget.h);
-								}
-							}
 						}
 						else {
 							// background moves to top
-
-							// background moves to bottom
 							src.sy = src.y = 0;
 							target.y = 0;
 
@@ -198,6 +219,13 @@ Engine.Background = function(canvas)
 										// current image is fully hidden, we should reset some coords to restart loop
 										tailActive = false;
 
+                                        if (config.random) {
+                                            setRandomImages();
+                                        }
+                                        else {
+                                            setNextImages();
+                                        }
+
 										src.y = src.sy;
 										target.y = 0;
 									}
@@ -214,24 +242,26 @@ Engine.Background = function(canvas)
 									target.h = src.h = canvas.height;
 								}
 							}
-
-							// render
-							this.renderFunc = function() {
-								_ctx.drawImage(_img, src.x, src.y, src.w, src.h,
-									target.x, target.y, target.w, target.h);
-
-								if (tailActive) {
-									// draw image "tail"
-									_ctx.drawImage(_img, tailSrc.x, tailSrc.y,
-										tailSrc.w, tailSrc.h,
-										tailTarget.x, tailTarget.y, tailTarget.w, tailTarget.h);
-								}
-							}
 						}
 					}
 
 					this.update = this.updateFunc;
-					this.render = this.renderFunc;
+					if (this.renderFunc) {
+						this.render = this.renderFunc;
+					}
+					else {
+						this.render = function() {
+							_ctx.drawImage(_imgs[src.imgi], src.x, src.y, src.w, src.h,
+								target.x, target.y, target.w, target.h);
+
+							if (tailActive) {
+								// draw image "tail"
+								_ctx.drawImage(_imgs[tailSrc.imgi], tailSrc.x, tailSrc.y,
+									tailSrc.w, tailSrc.h,
+									tailTarget.x, tailTarget.y, tailTarget.w, tailTarget.h);
+							}
+						};
+					}
 				}
 			};
 
@@ -442,9 +472,34 @@ Engine.Background = function(canvas)
 	self.load = function(imgUrl, callback)
 	{
 		if (!imgUrl) {
-			throw new Error("URL of image was not given");
+			throw new Error("URL(s) of image was not given");
 		}
 
+		var urls = [];
+		if (!Engine.Util.isArray(imgUrl)) {
+			urls = [imgUrl];
+		}
+		else {
+			urls = imgUrl;
+		}
+
+		var loaded = 0;
+		for (var i = 0, max = urls.length; i < max; i += 1) {
+			_imgs[i] = new Image();
+			_imgs[i].onload = function() {
+				if ((loaded += 1) >= urls.length) {
+					if (typeof(callback) == 'function') {
+						callback.apply(self, self);
+					}
+
+					self.getEventManager().fire('load', self, self);
+				}
+			}
+			_imgs[i].src = urls[i];
+		}
+
+		_img = _imgs[0];
+/*
 		self.getEventManager().fire('beforeload', self);
 		_img = new Image();
 		_img.onload = function() {
@@ -456,6 +511,7 @@ Engine.Background = function(canvas)
 		}
 
 		_img.src = imgUrl;
+*/
 		return self;
 	}
 

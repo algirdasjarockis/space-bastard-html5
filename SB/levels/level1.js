@@ -9,7 +9,7 @@ SB.level.setData({
 			// next sounds are custom and should be passed as object straight to SoundManager.load()
 			{handle: 'myCustomSound', path: 'sounds/level0.wav', loop: false}
 		],
-		bg: "img/backgrounds/bg3.jpg"
+		bg: ["img/backgrounds/xbg1.png", "img/backgrounds/xbg2.png", "img/backgrounds/xbg3.png", "img/backgrounds/xbg4.png", "img/backgrounds/xbg5.png"]
 	},
 
 	waves: [
