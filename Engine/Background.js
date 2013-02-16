@@ -33,7 +33,8 @@ Engine.Background = function(canvas)
 			stretch: false,			// should be auto true for smaller image than canvas
 			stretchWidth: false,	// ignored when image is narrower than canvas
             direction: 1,
-            random: false           // if multiple images are used, render them in random order
+            random: false,          // if multiple images are used, render them in random order
+			alpha: 1.0
 		}
 
 		config = Engine.Util.merge(defConfig, config);
@@ -110,14 +111,14 @@ Engine.Background = function(canvas)
 						tailTarget.y = config.direction * -target.h;
 
 						// update
-						this.updateFunc = function() {
-							target.y += config.speed * config.direction;
-							tailTarget.y += config.speed * config.direction;
+						this.updateFunc = function(delta) {
+							target.y += config.speed * config.direction * delta;
+							tailTarget.y += config.speed * config.direction * delta;
 
 							if ((config.direction < 0 && tailTarget.y <= 0) || (config.direction > 0 && tailTarget.y >= 0)) {
 								// loop end, restart positions
 								target.y = tailTarget.y;
-								tailTarget.y = config.direction * -target.h;
+								tailTarget.y = target.y + config.direction * -target.h;
 
 								if (config.random) {
 									setRandomImages();
@@ -131,13 +132,16 @@ Engine.Background = function(canvas)
 
 						// render
 						this.renderFunc = function() {
-							_ctx.drawImage(_imgs[src.imgi], src.x, src.y, src.w, src.h,
-								target.x, target.y, target.w, target.h);
+							_ctx.save();
+								_ctx.globalAlpha = config.alpha;
+								_ctx.drawImage(_imgs[src.imgi], src.x, src.y, src.w, src.h,
+									target.x, target.y, target.w, target.h);
 
-							// draw image "tail"
-							_ctx.drawImage(_imgs[tailSrc.imgi], tailSrc.x, tailSrc.y,
-								tailSrc.w, tailSrc.h,
-								tailTarget.x, tailTarget.y, tailTarget.w, tailTarget.h);
+								// draw image "tail"
+								_ctx.drawImage(_imgs[tailSrc.imgi], tailSrc.x, tailSrc.y,
+									tailSrc.w, tailSrc.h,
+									tailTarget.x, tailTarget.y, tailTarget.w, tailTarget.h);
+							_ctx.restore();
 						}
 					}
 					else {
@@ -160,8 +164,8 @@ Engine.Background = function(canvas)
 							src.sy = src.y = (_img.height - canvas.height);
 
 							// update
-							this.updateFunc = function() {
-								src.y += config.speed * direction;
+							this.updateFunc = function(delta) {
+								src.y += config.speed * direction * delta;
 
 								if (src.y < 0) {
 									src.y = 0;
@@ -170,7 +174,7 @@ Engine.Background = function(canvas)
 
 								if (tailActive) {
 									// reached image boundary
-									if ((target.y += -(config.speed * direction)) >= canvas.height) {
+									if ((target.y += -(config.speed * direction * delta)) >= canvas.height) {
 										// current image is fully hidden, we should reset some coords to restart loop
 										tailActive = false;
 
@@ -205,8 +209,8 @@ Engine.Background = function(canvas)
 							target.y = 0;
 
 							// update
-							this.updateFunc = function() {
-								src.y += config.speed * direction;
+							this.updateFunc = function(delta) {
+								src.y += config.speed * direction * delta;
 
 								if (_img.height - src.y < canvas.height) {
 									target.h = src.h = _img.height - src.y;
@@ -251,15 +255,18 @@ Engine.Background = function(canvas)
 					}
 					else {
 						this.render = function() {
-							_ctx.drawImage(_imgs[src.imgi], src.x, src.y, src.w, src.h,
-								target.x, target.y, target.w, target.h);
+							_ctx.save();
+								_ctx.globalAlpha = config.alpha;
+								_ctx.drawImage(_imgs[src.imgi], src.x, src.y, src.w, src.h,
+									target.x, target.y, target.w, target.h);
 
-							if (tailActive) {
-								// draw image "tail"
-								_ctx.drawImage(_imgs[tailSrc.imgi], tailSrc.x, tailSrc.y,
-									tailSrc.w, tailSrc.h,
-									tailTarget.x, tailTarget.y, tailTarget.w, tailTarget.h);
-							}
+								if (tailActive) {
+									// draw image "tail"
+									_ctx.drawImage(_imgs[tailSrc.imgi], tailSrc.x, tailSrc.y,
+										tailSrc.w, tailSrc.h,
+										tailTarget.x, tailTarget.y, tailTarget.w, tailTarget.h);
+								}
+							_ctx.restore();
 						};
 					}
 				}
@@ -285,18 +292,18 @@ Engine.Background = function(canvas)
 		//
 		// mode update function
 		//
-		this.update = function()
+		this.update = function(delta)
 		{
-			loopObj.update();
+			loopObj.update(delta);
 		}
 
 
 		//
 		// mode render function
 		//
-		this.render = function()
+		this.render = function(delta)
 		{
-			loopObj.render();
+			loopObj.render(delta);
 		}
 	}
 
@@ -327,13 +334,13 @@ Engine.Background = function(canvas)
 					//
 					// type update
 					//
-					this.update = function() {
+					this.update = function(delta) {
 						if (finished) {
 							return;
 						}
 
 						if (leftX < width) {
-							leftX += config.speed;
+							leftX += config.speed * delta;
 						}
 						else {
 							leftX = width;
@@ -341,7 +348,7 @@ Engine.Background = function(canvas)
 						}
 
 						if (rightX > width) {
-							rightX -= config.speed;
+							rightX -= config.speed * delta;
 						}
 						else {
 							rightX = width;
@@ -391,18 +398,18 @@ Engine.Background = function(canvas)
 		//
 		// mode update function
 		//
-		this.update = function()
+		this.update = function(delta)
 		{
-			curtainObj.update();
+			curtainObj.update(delta);
 		}
 
 
 		//
 		// mode render function
 		//
-		this.render = function()
+		this.render = function(delta)
 		{
-			curtainObj.render();
+			curtainObj.render(delta);
 		}
 	}
 
@@ -499,19 +506,6 @@ Engine.Background = function(canvas)
 		}
 
 		_img = _imgs[0];
-/*
-		self.getEventManager().fire('beforeload', self);
-		_img = new Image();
-		_img.onload = function() {
-			if (typeof(callback) == 'function') {
-				callback.apply(self, self);
-			}
-
-			self.getEventManager().fire('load', self, self);
-		}
-
-		_img.src = imgUrl;
-*/
 		return self;
 	}
 
@@ -519,18 +513,18 @@ Engine.Background = function(canvas)
 	//
 	// update method for game loop
 	//
-	self.update = function()
+	self.update = function(delta)
 	{
-		_modeObj.update();
+		_modeObj.update(delta);
 	}
 
 
 	//
 	// render method for game loop
 	//
-	self.render = function()
+	self.render = function(delta)
 	{
-		_modeObj.render();
+		_modeObj.render(delta);
 	}
 
 	return self;

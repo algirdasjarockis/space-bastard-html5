@@ -367,19 +367,19 @@ Engine.Entity = function (sprite, gameObject)
 	//
 	// frame update function
 	//
-	this.update = function()
+	this.update = function(delta)
 	{
-		self.getEventManager().fire('update', this, this);
+		self.getEventManager().fire('update', this, this, delta);
 	}
 
 
 	//
 	// frame render function
 	//
-	this.render = function()
+	this.render = function(delta)
 	{
 		if (_sprite) {
-			_sprite.play();
+			_sprite.play(false, delta);
 		}
 	}
 

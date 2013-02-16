@@ -230,12 +230,12 @@ Engine.RenderPipe = function()
 		//
 		// render
 		//
-		this.render = function()
+		this.render = function(delta)
 		{
 			for (var i = 0, max = _order.length; i < max; i += 1) {
 				var layer = _layers[_order[i]];
 				for (var j = 0, len = layer.length; j < len; j += 1) {
-					layer[j].render();
+					layer[j].render(delta);
 				}
 			}
 		}
@@ -244,12 +244,12 @@ Engine.RenderPipe = function()
 		//
 		// update
 		//
-		this.update = function()
+		this.update = function(delta)
 		{
 			for (var i = 0, max = _order.length; i < max; i += 1) {
 				var layer = _layers[_order[i]];
 				for (var j = 0, len = layer.length; j < len; j += 1) {
-					layer[j].update();
+					layer[j].update(delta);
 				}
 			}
 		}
@@ -407,10 +407,10 @@ Engine.RenderPipe = function()
 	//
 	// @chainable
 	//
-	this.update = function()
+	this.update = function(delta)
 	{
 		var scene = this.currScene;
-		this.rp[scene].update();
+		this.rp[scene].update(delta);
 
 		return this;
 	}
@@ -421,11 +421,11 @@ Engine.RenderPipe = function()
 	//
 	// @chainable
 	//
-	this.render = function()
+	this.render = function(delta)
 	{
 		_rendering = true;
 		var sceneName = this.currScene;
-		this.rp[sceneName].render();
+		this.rp[sceneName].render(delta);
 
 		_rendering = false;
 

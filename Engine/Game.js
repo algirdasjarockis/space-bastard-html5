@@ -14,7 +14,41 @@ Engine.Game = function (canvasElem)
 	var _updateInterval = 0,
 		_renderInterval = 0,
 		_fps = 50,
-		_timeouts = {};
+		_timeouts = {},
+		_delta = 0;
+
+	self.requestAnimationFrame = null;
+	self.cancelAnimationFrame = null;
+
+	var _ra = null,
+		_rc = null;
+
+	(function() {
+		var lastTime = 0;
+		var vendors = ['ms', 'moz', 'webkit', 'o', ''];
+		for (var x = 0, max = vendors.length; x < max && !_ra; x += 1) {
+			_ra = window[vendors[x]+'RequestAnimationFrame'];
+			_rc = window[vendors[x]+'CancelAnimationFrame'] ||
+				window[vendors[x]+'CancelRequestAnimationFrame'];
+
+			console.log(vendors[x] + 'RequestAnimationFrame');
+		}
+
+		if (!self.requestAnimationFrame) {
+			_ra = function(callback, element) {
+				var currTime = new Date().getTime();
+				var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+				var id = setTimeout(function() { callback(currTime + timeToCall); },
+				  timeToCall);
+				lastTime = currTime + timeToCall;
+				return id;
+			};
+
+			_rc = function(id) {
+				clearTimeout(id);
+			};
+		}
+	})();
 
 	self.canvas = document.getElementById(canvasElem);
 
@@ -35,7 +69,7 @@ Engine.Game = function (canvasElem)
 			return false;
 		}
 
-		self.rp.update();
+		self.rp.update(_delta);
 		self.getEventManager().fire('update', self, self);
 		self.collisions.check(self.scene());
 		return true;
@@ -50,7 +84,7 @@ Engine.Game = function (canvasElem)
 			return false;
 		}
 
-		self.rp.render();
+		self.rp.render(_delta);
 		self.getEventManager().fire('render', self, self);
 		return true;
 	}
@@ -140,6 +174,24 @@ Engine.Game = function (canvasElem)
 
 
 	//
+	// wrapper for animation frame
+	//
+	self.requestAnimationFrame = function(callback)
+	{
+		_ra(callback);
+	}
+
+
+	//
+	// wrapper for animation frame
+	//
+	self.cancelAnimationFrame = function()
+	{
+		_rc();
+	}
+
+
+	//
 	// game loop start
 	//
 	// @chainable
@@ -155,8 +207,23 @@ Engine.Game = function (canvasElem)
 			_fps = fps;
 		}
 
-		_updateInterval = setInterval(_update, 1000 / _fps);
-		_renderInterval = setInterval(_render, 1000 / _fps);
+		//_updateInterval = setInterval(_update, 1000 / _fps);
+		//_renderInterval = setInterval(_render, 1000 / _fps);
+
+		var lastFrame = (new Date().getTime());
+		(function animLoop(time) {
+			_ra(animLoop);
+			_delta = (time - lastFrame);
+			_fps = 1 / (_delta / 1000);
+			//console.log(_fps);
+			_delta /= 16;
+			lastFrame = time;
+
+			if (_delta < 5) {
+				_update();
+				_render();
+			}
+		})(lastFrame);
 
 		self.getEventManager().fire('start');
 		return self;

@@ -322,7 +322,7 @@ var SB = {
 			game.rp.clearScene('game-over');
 
 			// set up main background config
-            SB.level.bg.setMode('loop', {mode: 'vertical', speed: 5, direction: 1, random: true, stretch: false});
+            SB.level.bg.setMode('loop', {mode: 'vertical', speed: 4, direction: 1, random: true, stretch: false});
 
 			// create some entities that are not managed by level
 			SB.gui.addToRenderPipe(SB.level.bg, 'main', 'bg');
@@ -411,6 +411,14 @@ var SB = {
 			self.player
 				.spawnProtection(3000)
 				.set({score: 0, ammo: 0});
+
+			// @test: create effect backgrounds :)))~
+			SB.game.bg.effect1 = new Engine.Background(game.canvas)
+				.load('img/backgrounds/atmos.png')
+				.on('load', function(bg) {
+					bg.setMode('loop', {mode: 'vertical', speed: 6, direction: 1, alpha: 0.3});
+					SB.gui.addToRenderPipe(bg, 'main', 'bg');
+				});
 		})
 	},
 

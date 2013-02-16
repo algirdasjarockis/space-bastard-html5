@@ -36,7 +36,7 @@ SB.GameEntity = function(entity)
 		// more cool events for bastards!
 		entity.registerEvents(['waypointend', 'scrollxsidechange']);
 
-		entity.on('update', function() {
+		entity.on('update', function(entity, delta) {
 			if (this.movement[_currMov] != undefined) {
 				if (_waypoint) {
 					// continue to waypoint
@@ -49,44 +49,47 @@ SB.GameEntity = function(entity)
 					}
 				}
 				else {
-					if (typeof(this.movement[_currMov]) == 'object' && this.movement[_currMov].x && this.movement[_currMov].y) {
+					if (typeof(entity.movement[_currMov]) == 'object' && entity.movement[_currMov].x && entity.movement[_currMov].y) {
 						// we got destination point!
 						_waypoint = {
-							x: this.movement[_currMov].x,
-							y: this.movement[_currMov].y,
+							x: entity.movement[_currMov].x,
+							y: entity.movement[_currMov].y,
 							currIteration: 0
 						}
 
-						var lenX = _waypoint.x - this.x();
-						var lenY = _waypoint.y - this.y();
+						var lenX = _waypoint.x - entity.x();
+						var lenY = _waypoint.y - entity.y();
 
 						if (lenX == 0 && lenY == 0) {
 							_waypoint = null;
 						}
 						else {
-							this.dx = lenX ? 1 * this.speed * -lenX / -(Math.abs(lenX)): 0;
-							this.dy = lenX ? lenY / Math.abs(lenX) * this.speed : 1 * this.speed * -lenY / -(Math.abs(lenY));		// getting sign for correct direction
+							entity.dx = lenX ? 1 * entity.speed * -lenX / -(Math.abs(lenX)): 0;
+							entity.dy = lenX ? lenY / Math.abs(lenX) * entity.speed : 1 * entity.speed * -lenY / -(Math.abs(lenY));		// getting sign for correct direction
 
-							_waypoint.maxIterations = (lenX) ? lenX / this.dx : lenY / this.dy;
+							entity.dx *= delta;
+							entity.dy *= delta;
+
+							_waypoint.maxIterations = (lenX) ? lenX / entity.dx : lenY / entity.dy;
 							_waypoint.maxIterations = Math.abs(_waypoint.maxIterations);
 						}
 					}
-					else if (this.movement[_currMov] == "scroll-x") {
+					else if (entity.movement[_currMov] == "scroll-x") {
 						if (_firstIteration) {
 							// set dx only once
-							this.dx = this.speed;
+							entity.dx = entity.speed;
 							_firstIteration = false;
 						}
-						var x = this.x();
+						var x = entity.x();
 						if (x > SB.game.canvas.width || x < 0) {
-							this.dx *= -this.speed;
-							this.getEventManager().fire('scrollxsidechange', this, this, this.dx);
+							entity.dx *= -entity.speed;
+							entity.getEventManager().fire('scrollxsidechange', this, this, entity.dx);
 						}
 
-						this.x(x + this.dx);
+						entity.x(x + entity.dx * delta);
 					}
-					else if (this.movement[_currMov] == "kamikaze") {
-						this.moveTo(SB.game.ent.hero.x(), SB.game.ent.hero.y());
+					else if (entity.movement[_currMov] == "kamikaze") {
+						entity.moveTo(SB.game.ent.hero.x() * delta, SB.game.ent.hero.y() * delta);
 					}
 				}
 			}
@@ -158,16 +161,16 @@ SB.GameEntity = function(entity)
 				})
 				.addToRenderPipe()
 				.addToCollisions(entity.type == 'enemy' ? 'enemies' : 'friends')
-				.on('update', function() {
-					var y = this.y();
+				.on('update', function(ammo, delta) {
+					var y = ammo.y();
 					if (y <= -10 || y >= SB.game.canvas.height + 20) {
-						this.removeFromRenderPipe()
+						ammo.removeFromRenderPipe()
 							.removeFromCollisions();
 						return;
 					}
 
-					this.x(this.x() + this.dx)
-						.y(y - this.dy);
+					ammo.x(ammo.x() + ammo.dx * delta)
+						.y(y - ammo.dy * delta);
 				})
 				.on('collide', function(item) {
 					if (item.type != "ammo") {

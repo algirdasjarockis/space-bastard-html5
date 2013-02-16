@@ -129,7 +129,7 @@ Engine.Sprite = function (canvas, img)
 			// so lazy but so classy object value setting!
 			var newAction = Engine.ObjectHelperMixin({});
 			newAction.set(Engine.ObjectHelperMixin(action).get());
-			
+
 			copy.addAction(name, newAction);
 		}
 
@@ -167,7 +167,7 @@ Engine.Sprite = function (canvas, img)
 	//
 	this.play = function(actionName)
 	{
-		if (typeof(actionName) == "undefined")
+		if (!actionName)
 			actionName = this.action;
 
 		if (actionName in _actions) {
