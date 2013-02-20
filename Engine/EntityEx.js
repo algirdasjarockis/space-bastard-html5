@@ -30,19 +30,20 @@ Engine.EntityEx = (function()
 		var _rp = (gameObject) ? gameObject.rp : null,
 			_sprite = null,
 			_sprites = [],
-			_collisionGroup = 'friends';
+			_collisionGroup = 'friends',
+			_rect = {x: 0, y: 0, w: 0, h: 0};
 
 		function _init()
 		{
 			if (specs) {
 				if ('sprite' in specs) {
-					if (specs.sprite instanceof Engine.Sprite) {
+					if (specs.sprite instanceof Engine.SpriteEx) {
 						// set up sprite from instance
-						_sprite = sprite.duplicate();
+						_sprite = specs.sprite.duplicate();
 					}
 					else if (typeof specs.sprite == 'string') {
 						// set up sprite by it's name
-						var spriteData = gameObject.ssm.getSprite(sprite);
+						var spriteData = gameObject.ssm.getSprite(specs.sprite);
 						_sprite = spriteData.duplicate();
 					}
 
@@ -67,6 +68,35 @@ Engine.EntityEx = (function()
 			'die', 'beforehealthchange', 'healthchange', 'collide', 'update', 'lastframe'
 		]);
 
+
+/*
+ Engine.EntityEx.load({
+	name: 'hero',
+
+	// rotation points
+	rpoints: {
+		a: {x: 0, y: -20},
+		b: {x: 0, y: -10},
+
+		// this is mass center point, most important one
+		c: {x: 0, y: 0}
+	},
+
+	sprites: [
+		{
+			name: "hero",
+			body: true,
+			x: 0, y: 0,
+			rot: 0
+		}
+	],
+
+	// collision points, soooon ...
+	cpoints: [
+
+	]
+});
+ */
 
 		//
 		//
@@ -93,6 +123,14 @@ Engine.EntityEx = (function()
 							}
 
 							self.getEventManager().fire('datafileload', self, self, specs.name, specs.path);
+
+							_sprites = [];
+							for (var i = 0, len = bank[specs.name].sprites.length; i < len; i += 1) {
+								var spriteData = bank[specs.name].sprites[i];
+								var sprite = gameObject.ssm.getSprite(spriteData.name);
+								_sprites[i] = sprite.duplicate()
+									.set({x: spriteData.x, y: spriteData.y, rot: spriteData});
+							}
 						},
 
 						function failure() {
@@ -130,11 +168,12 @@ Engine.EntityEx = (function()
 		//
 		this.x = function(xVal)
 		{
-			if (_sprite) {
-				if (typeof(xVal) == "undefined")
-					return _sprite.x;
+			if (typeof(xVal) == "undefined")
+				return _rect.x;
 
-				_sprite.x = xVal;
+			for (var i = 0, len = _sprites.length; i < len; i += 1) {
+				// @fix
+				_sprites[i].gx = xVal;
 			}
 
 			return this;
