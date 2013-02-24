@@ -12,14 +12,7 @@ Engine.SpriteEx = function (canvas, img)
 	var _canvas = canvas,
 		_ctx = null,
 		// skipped frame counter
-		_skipped = 0,
-		_dm = {
-			// global x,y for drawing into canvas
-			gx: 0, gy: 0,
-			// relative position to belonging entity's center
-			x: 0, y: 0,
-			rot: 0
-		}
+		_skipped = 0;
 
 	if (canvas) {
 		_ctx = canvas.getContext("2d");
@@ -35,10 +28,6 @@ Engine.SpriteEx = function (canvas, img)
 	// relative position to belonging entity's center
 	this.x = 0;
 	this.y = 0;
-
-	// global position used for drawing
-	this.gx = 0;
-	this.gy = 0;
 
 	// rotation value
 	this.rot = 0;
@@ -135,7 +124,7 @@ Engine.SpriteEx = function (canvas, img)
 	//
 	this.duplicate = function()
 	{
-		var copy = new Engine.Sprite(_canvas, Object.create(self.img));
+		var copy = new Engine.SpriteEx(_canvas, Object.create(self.img));
 		copy.init();
 		copy.set(self.get());
 
@@ -207,9 +196,16 @@ Engine.SpriteEx = function (canvas, img)
 				}
 			}
 
-			_ctx.drawImage(self.img, act.sx + act.width * act.currFrame, act.sy, act.width, act.height,
-				self.x, self.y, act.width * self.scale, act.height * self.scale);
+			//_ctx.drawImage(self.img, act.sx + act.width * act.currFrame, act.sy, act.width, act.height,
+			//	self.x, self.y, act.width * self.scale, act.height * self.scale);
 
+			_ctx.save();
+			_ctx.translate(self.x,self.y);
+			_ctx.rotate(self.rot);
+
+			_ctx.drawImage(self.img, act.sx + act.width * act.currFrame, act.sy, act.width, act.height,
+				-act.width / 2, -act.height / 2, act.width * self.scale, act.height * self.scale);
+			_ctx.restore();
 		}
 		else console.log("Engine.Sprite.loop(): No such action!");
 

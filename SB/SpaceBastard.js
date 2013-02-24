@@ -177,7 +177,9 @@ var SB = {
 			// level loading animation
 			.createScene("loading-screen")
 			// game over scene
-			.createScene("game-over");
+			.createScene("game-over")
+			// scene for testing purposes
+			.createScene("playground");
 
 		// load sprite sheets
 		var spriteSheetDir = "img/sprites/";
@@ -404,6 +406,8 @@ var SB = {
 
 			game.scene('main');
 			SB.level.run();
+
+			self.setTestingPlayground();
 		})
 		.on('start', function() {
 			console.log('-- level started --');
@@ -420,6 +424,32 @@ var SB = {
 					SB.gui.addToRenderPipe(bg, 'main', 'bg');
 				});
 		})
+	},
+
+
+	//
+	// test and experiment some stuff
+	//
+	setTestingPlayground: function()
+	{
+		SB.gui.addToRenderPipe(SB.level.bg, 'playground');
+
+		SB.game.ent.t = new Engine.Entity(null, SB.game)
+			.loadDataFile({path: 'data/entities/hero.js', name: 'hero'})
+			.x(SB.game.canvas.width / 2)
+			.y(SB.game.canvas.height / 2)
+			.addToRenderPipe('playground');
+
+		SB.game.on('scenechange', function(prev, curr) {
+			if (curr == 'playground') {
+				console.log('- WELCOME -');
+				console.log('- Welcome, to playground! This test entity can be reached by name: SB.game.ent.t');
+				console.log('- You can also add listener: ');
+				console.log("	SB.game.ent.t.on('update', function(ent) { if (!ent.degree || ent.degree >= 359) { ent.degree = 0; } ent.rot = Math.PI / 180 * ent.degree; ent.degree += 1; });");
+			}
+		});
+
+		// SB.game.ent.t.on('update', function(ent) { if (!ent.degree || ent.degree >= 359) { ent.degree = 0; } ent.rot = Math.PI / 180 * ent.degree; ent.degree += 1; });
 	},
 
 

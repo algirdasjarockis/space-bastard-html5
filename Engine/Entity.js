@@ -9,7 +9,7 @@
 //					(no need to give copy of object, it is done in constructor)
 // @param Array - render pipe
 //
-Engine.Entity = function (sprite, gameObject)
+Engine.EntityByeBye = function (sprite, gameObject)
 {
 	var self = this;
 
@@ -31,6 +31,7 @@ Engine.Entity = function (sprite, gameObject)
 	else if (sprite) {
 		var spriteData = gameObject.ssm.getSprite(sprite);
 		_sprite = spriteData.duplicate();
+		console.log(_sprite);
 	}
 
 	this._collisionGroup = "";

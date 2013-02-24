@@ -6,14 +6,14 @@
 // constructor
 //
 // @param Engine.Sprite/String sprite - sprite name or valid sprite object
-//					(no need to give copy of object, it is done in constructor)
-// @param Array - render pipe
+//    				(no need to give copy of object, it is done in constructor)
+// @param Engine.Game - game object
 //
-Engine.EntityEx = (function()
+Engine.Entity = (function()
 {
 	var bank = {};
 
-	function Entity(sprite, gameObject, specs)
+	function Entity(specs, gameObject)
 	{
 		var self = this;
 
@@ -25,6 +25,7 @@ Engine.EntityEx = (function()
 		this.name = 'nameless';
 		this.scene = '';
 		this.layer = '';
+		this.rot = 0;
 
 		// render pipe
 		var _rp = (gameObject) ? gameObject.rp : null,
@@ -36,7 +37,16 @@ Engine.EntityEx = (function()
 		function _init()
 		{
 			if (specs) {
-				if ('sprite' in specs) {
+				if (specs instanceof Engine.SpriteEx) {
+					// set up sprite from instance
+					_sprite = specs.duplicate();
+				}
+				else if (typeof specs == 'string') {
+					// set up sprite by it's name
+					var spriteData = gameObject.ssm.getSprite(specs);
+					_sprite = spriteData.duplicate();
+				}
+				else if ('sprite' in specs) {
 					if (specs.sprite instanceof Engine.SpriteEx) {
 						// set up sprite from instance
 						_sprite = specs.sprite.duplicate();
@@ -46,15 +56,14 @@ Engine.EntityEx = (function()
 						var spriteData = gameObject.ssm.getSprite(specs.sprite);
 						_sprite = spriteData.duplicate();
 					}
-
-					if (_sprite) {
-						_sprite.on('lastframe', function(sprite, action) {
-							self.getEventManager().fire('lastframe', self, self, sprite, action);
-						});
-					}
 				}
-				else if ('dataFile' in specs) {
-					// entity data file is provided
+
+				if (_sprite) {
+					_sprites.push(_sprite);
+					_sprite.set({x: 0, y: 0, rot: 0, body: true})
+						.on('lastframe', function(_sprite, action) {
+							self.getEventManager().fire('lastframe', self, self, _sprite, action);
+						});
 				}
 			}
 		}
@@ -68,35 +77,6 @@ Engine.EntityEx = (function()
 			'die', 'beforehealthchange', 'healthchange', 'collide', 'update', 'lastframe'
 		]);
 
-
-/*
- Engine.EntityEx.load({
-	name: 'hero',
-
-	// rotation points
-	rpoints: {
-		a: {x: 0, y: -20},
-		b: {x: 0, y: -10},
-
-		// this is mass center point, most important one
-		c: {x: 0, y: 0}
-	},
-
-	sprites: [
-		{
-			name: "hero",
-			body: true,
-			x: 0, y: 0,
-			rot: 0
-		}
-	],
-
-	// collision points, soooon ...
-	cpoints: [
-
-	]
-});
- */
 
 		//
 		//
@@ -125,12 +105,41 @@ Engine.EntityEx = (function()
 							self.getEventManager().fire('datafileload', self, self, specs.name, specs.path);
 
 							_sprites = [];
+							var maxLeftWidth = 0,
+								maxRightWidth = 0,
+								maxTopHeight = 0,
+								maxBotHeight = 0;
+
 							for (var i = 0, len = bank[specs.name].sprites.length; i < len; i += 1) {
 								var spriteData = bank[specs.name].sprites[i];
 								var sprite = gameObject.ssm.getSprite(spriteData.name);
-								_sprites[i] = sprite.duplicate()
-									.set({x: spriteData.x, y: spriteData.y, rot: spriteData});
+								if (sprite) {
+									_sprites[i] = sprite.duplicate()
+										.set({
+											name: spriteData.name,
+											x: spriteData.x,
+											y: spriteData.y,
+											rot: spriteData.rot,
+											body: spriteData.body
+										});
+
+									var xLeft = _sprites[i].width() / 2 - spriteData.x,
+										xRight = _sprites[i].width() / 2 + spriteData.x,
+										yTop = _sprites[i].height() / 2 - spriteData.y,
+										yBot = _sprites[i].height() / 2 + spriteData.y;
+
+									maxLeftWidth = Math.max(maxLeftWidth, xLeft);
+									maxRightWidth = Math.max(maxRightWidth, xRight);
+									maxTopHeight = Math.max(maxTopHeight, yTop);
+									maxBotHeight = Math.max(maxBotHeight, yBot);
+								}
+								else {
+									throw new Error(Engine.Util.format("Sprite not found: '{0}'", spriteData.name));
+								}
 							}
+
+							_rect.w = maxLeftWidth + maxRightWidth;
+							_rect.h = maxTopHeight + maxBotHeight;
 						},
 
 						function failure() {
@@ -146,16 +155,24 @@ Engine.EntityEx = (function()
 			else {
 				throw new Error("No argument object was passed");
 			}
+
+			// var e = new Engine.EntityEx(null, SB.game).loadDataFile({path: 'data/entities/hero.js', name: 'hero'});
+			return this;
 		}
 
 
+		this.getSprite = function()
+		{
+			return _sprite;
+		}
+
 
 		//
 		//
 		//
-		this.getSprite = function()
+		this.getSprites = function()
 		{
-			return _sprite;
+			return _sprites;
 		}
 
 
@@ -168,12 +185,11 @@ Engine.EntityEx = (function()
 		//
 		this.x = function(xVal)
 		{
-			if (typeof(xVal) == "undefined")
+			if (typeof(xVal) == "undefined") {
 				return _rect.x;
-
-			for (var i = 0, len = _sprites.length; i < len; i += 1) {
-				// @fix
-				_sprites[i].gx = xVal;
+			}
+			else {
+				_rect.x = xVal;
 			}
 
 			return this;
@@ -190,11 +206,11 @@ Engine.EntityEx = (function()
 		//
 		this.y = function(yVal)
 		{
-			if (_sprite) {
-				if (typeof(yVal) == "undefined")
-					return _sprite.y;
-
-				_sprite.y = yVal;
+			if (typeof(yVal) == "undefined") {
+				return _rect.y;
+			}
+			else {
+				_rect.y = yVal;
 			}
 
 			return this;
@@ -210,10 +226,8 @@ Engine.EntityEx = (function()
 		//
 		this.move = function(dx, dy)
 		{
-			if (_sprite) {
-				_sprite.x += dx;
-				_sprite.y += dy;
-			}
+			_rect.x += dx;
+			_rect.y += dy;
 
 			return this;
 		}
@@ -272,9 +286,11 @@ Engine.EntityEx = (function()
 		//
 		this.width = function(val)
 		{
-			if (_sprite) {
-				return _sprite.width(val);
-			}
+			//if (_sprite) {
+			//	return _sprite.width(val);
+			//}
+
+			return _rect.w;
 
 			return this;
 		}
@@ -292,6 +308,8 @@ Engine.EntityEx = (function()
 			if (_sprite) {
 				return _sprite.height(val);
 			}
+
+			return _rect.h;
 
 			return this;
 		}
@@ -481,11 +499,20 @@ Engine.EntityEx = (function()
 		//
 		this.render = function(delta)
 		{
-			if (_sprite) {
-				_sprite.play(false, delta);
-			}
-		}
+			//if (_sprite) {
+			//	_sprite.play(false, delta);
+			//}
 
+			var ctx = gameObject.canvas.getContext("2d");
+
+			ctx.save();
+			ctx.translate(_rect.x, _rect.y);
+			ctx.rotate(self.rot);
+			for (var i = 0, len = _sprites.length; i < len; i += 1) {
+				_sprites[i].play(false, delta);
+			}
+			ctx.restore();
+		}
 
 		_init();
 		return self;
@@ -501,3 +528,4 @@ Engine.EntityEx = (function()
 
 	return Entity;
 })();
+

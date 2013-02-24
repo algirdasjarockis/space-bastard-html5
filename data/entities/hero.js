@@ -20,6 +20,18 @@ Engine.EntityEx.load({
 			body: true,
 			x: 0, y: 0,
 			rot: 0
+		},
+		{
+			name: "ammo1",
+			body: false,
+			x: 30, y: 0,
+			rot: Math.PI / 180 * 45
+		},
+		{
+			name: "ammo1",
+			body: false,
+			x: -30, y: 0,
+			rot: -Math.PI / 180 * 45
 		}
 	],
 

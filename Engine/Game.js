@@ -137,6 +137,7 @@ Engine.Game = function (canvasElem)
 	//
 	// PUBLIC
 	//
+	// .. more keys will be added soon ....( @)( @)..
 	self.KEY_ESCAPE = 27;
 
 	//

@@ -48,13 +48,16 @@ Engine.GuiButton = function(sprite, gameObject)
 		if (!this.visible) {
 			return;
 		}
-		var _sprite = this.getSprite();
+		var _sprite = this.getSprite(),
+			ctx = gameObject.canvas.getContext("2d");
 
+		ctx.save();
+		ctx.translate(this.x(), this.y());
+		ctx.rotate(this.rot);
 		if (_sprite) {
 			_sprite.play();
 		}
-
-		var ctx = gameObject.canvas.getContext("2d");
+		ctx.restore();
 
 		if (ctx) {
 			ctx.save();
