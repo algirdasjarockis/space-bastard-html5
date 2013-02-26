@@ -38,26 +38,33 @@ Engine.GuiProgress = function(bodySprite, stepSprite, gameObject)
 			return;
 		}
 
-		if (_stepSprites.length <= 0) {
-			var totalSteps = (_sprite.width() - this.border * 2) / _stepSprite.width();
-			_stepValue = 100 / totalSteps;
+		var ctx = gameObject.canvas.getContext("2d");
+		ctx.save();
+		ctx.translate(this.x(), this.y());
+		ctx.rotate(this.rot);
 
-			for (var i = 0; i < totalSteps; i += 1) {
-				var sprite = _stepSprite.duplicate();
-				sprite.skip = 7;
-				sprite.x = this.x() + (this.border + sprite.width() * i);
-				sprite.y = this.y();
-				_stepSprites.push(sprite);
+			if (_stepSprites.length <= 0) {
+				var totalSteps = (_sprite.width() - this.border * 2) / _stepSprite.width();
+				_stepValue = 100 / totalSteps;
+
+				for (var i = 0; i < totalSteps; i += 1) {
+					var sprite = _stepSprite.duplicate();
+					sprite.skip = 7;
+					sprite.x = this.x() + (this.border + sprite.width() * i);
+					sprite.y = this.y();
+					_stepSprites.push(sprite);
+				}
 			}
-		}
 
-		var stepCount = this.value / _stepValue;
-		for (i = 0; i < stepCount; i += 1) {
-			_stepSprites[i].play();
-		}
+			var stepCount = this.value / _stepValue;
+			for (i = 0; i < stepCount; i += 1) {
+				_stepSprites[i].play();
+			}
 
-		if (_sprite) {
-			_sprite.play();
-		}
+			if (_sprite) {
+				_sprite.play();
+			}
+
+		ctx.restore();
 	}
 }

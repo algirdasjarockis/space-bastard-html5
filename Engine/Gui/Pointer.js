@@ -22,8 +22,13 @@ Engine.GuiPointer = function(sprite, gameObject)
 	this.render = function()
 	{
 		var _sprite = this.getSprite();
+		var ctx = gameObject.canvas.getContext("2d");
 		if (_sprite && this.visible) {
+			ctx.save();
+			ctx.translate(this.x(), this.y());
+			ctx.rotate(this.rot);
 			_sprite.play();
+			ctx.restore();
 		}
 	}
 }

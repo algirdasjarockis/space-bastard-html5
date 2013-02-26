@@ -31,8 +31,8 @@ Engine.GuiSystem = function(gameObject)
 			var item = items[i];
 
 			if (anyItem) {
-				var itemX = item.x();
-				var itemY = item.y();
+				var itemX = item.x() - item.width() / 2;
+				var itemY = item.y() - item.height() / 2;
 				if (x > itemX && y > itemY &&
 						x < itemX + item.width() && y < itemY + item.height()) {
 

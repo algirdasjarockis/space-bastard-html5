@@ -57,34 +57,37 @@ Engine.GuiButton = function(sprite, gameObject)
 		if (_sprite) {
 			_sprite.play();
 		}
+
+		ctx.save();
+		ctx.fillStyle = (this.action() == "main") ? this.captionColor.normal : this.captionColor.hover;
+		ctx.font = (this.action() == "main") ? this.captionFont.normal : this.captionFont.hover;
+		ctx.textAlign = this.captionAlign;
+		ctx.textBaseline = "middle";
+
+		// label coordinates (default by left align)
+		var labelX = this.x();
+		var labelY = this.y() + this.height() / 2;
+
+		labelX = 0;
+		labelY = 0;
+
+		/*
+		switch (this.captionAlign) {
+		case "center":
+			labelX += this.width() / 2;
+			break;
+
+		case "right":
+			labelX += this.width();
+			break;
+		}
+		*/
+		labelX += (this.captionMargin.left - this.captionMargin.right);
+		labelY += (this.captionMargin.top - this.captionMargin.bottom);
+
+		ctx.fillText(this.text, labelX, labelY, this.width());
 		ctx.restore();
 
-		if (ctx) {
-			ctx.save();
-			ctx.fillStyle = (this.action() == "main") ? this.captionColor.normal : this.captionColor.hover;
-			ctx.font = (this.action() == "main") ? this.captionFont.normal : this.captionFont.hover;
-			ctx.textAlign = this.captionAlign;
-			ctx.textBaseline = "middle";
-
-			// label coordinates (default by left align)
-			var labelX = this.x();
-			var labelY = this.y() + this.height() / 2;
-
-			switch (this.captionAlign) {
-			case "center":
-				labelX += this.width() / 2;
-				break;
-
-			case "right":
-				labelX += this.width();
-				break;
-			}
-
-			labelX += (this.captionMargin.left - this.captionMargin.right);
-			labelY += (this.captionMargin.top - this.captionMargin.bottom);
-
-			ctx.fillText(this.text, labelX, labelY, this.width());
-			ctx.restore();
-		}
+		ctx.restore();
 	}
 }

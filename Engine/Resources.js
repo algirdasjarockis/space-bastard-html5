@@ -32,7 +32,6 @@ Engine.Resources.SpriteSheet = (function(){
 
 				// got sprite, so create it
 				_sprites[spriteName] = new Engine.SpriteEx(canvas, img);
-				console.log(_sprites[spriteName]);
 				_sprites[spriteName].name = spriteName;
 				if (spriteObj[spriteName].skip) {
 					_sprites[spriteName].skip = spriteObj[spriteName].skip;

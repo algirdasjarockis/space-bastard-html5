@@ -59,6 +59,8 @@ Engine.Entity = (function()
 				}
 
 				if (_sprite) {
+					_rect.w = _sprite.width();
+					_rect.h = _sprite.height();
 					_sprites.push(_sprite);
 					_sprite.set({x: 0, y: 0, rot: 0, body: true})
 						.on('lastframe', function(_sprite, action) {
