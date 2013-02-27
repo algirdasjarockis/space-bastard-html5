@@ -40,8 +40,12 @@ Engine.GuiProgress = function(bodySprite, stepSprite, gameObject)
 
 		var ctx = gameObject.canvas.getContext("2d");
 		ctx.save();
-		ctx.translate(this.x(), this.y());
-		ctx.rotate(this.rot);
+			ctx.translate(this.x(), this.y());
+			ctx.rotate(this.rot);
+
+			if (_sprite) {
+				_sprite.play();
+			}
 
 			if (_stepSprites.length <= 0) {
 				var totalSteps = (_sprite.width() - this.border * 2) / _stepSprite.width();
@@ -50,8 +54,8 @@ Engine.GuiProgress = function(bodySprite, stepSprite, gameObject)
 				for (var i = 0; i < totalSteps; i += 1) {
 					var sprite = _stepSprite.duplicate();
 					sprite.skip = 7;
-					sprite.x = this.x() + (this.border + sprite.width() * i);
-					sprite.y = this.y();
+					sprite.x = this.border + sprite.width() * i;
+					sprite.y = 0;
 					_stepSprites.push(sprite);
 				}
 			}
@@ -59,10 +63,6 @@ Engine.GuiProgress = function(bodySprite, stepSprite, gameObject)
 			var stepCount = this.value / _stepValue;
 			for (i = 0; i < stepCount; i += 1) {
 				_stepSprites[i].play();
-			}
-
-			if (_sprite) {
-				_sprite.play();
 			}
 
 		ctx.restore();

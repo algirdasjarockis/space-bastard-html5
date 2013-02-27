@@ -16,6 +16,7 @@ Engine.Resources.SpriteSheet({
 			}
 		},
 		progress: {
+			pivot: "left",
 			actions: {
 				main: {
 					x: 32,
@@ -29,6 +30,7 @@ Engine.Resources.SpriteSheet({
 			}
 		},
 		progressStep: {
+			pivot: "left",
 			actions: {
 				main: {
 					x: 159,

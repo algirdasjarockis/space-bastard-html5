@@ -24,9 +24,17 @@ Engine.Sprite = function (canvas, img)
 	//
 	// PUBLIC
 	//
-	// current display dimensions and positions
+
+	// relative position to belonging entity's center
 	this.x = 0;
 	this.y = 0;
+
+	// pivot coordinates (local to sprite rectangle)
+	this.pivot = {x: 0, y: 0};
+
+	// rotation value
+	this.rot = 0;
+
 	this.scale = 1.0;
 	// how much skip frames
 	this.skip = 5;
@@ -56,6 +64,47 @@ Engine.Sprite = function (canvas, img)
 		return self;
 	}
 
+
+	//
+	// set pivot coordinates
+	//
+	// @chainable
+	// @param Object/String specs - {x; y} or string value which can contain one or two values:
+	//						top, right, bottom, left, center, middle
+	this.setPivot = function(specs)
+	{
+		if (typeof specs === "string") {
+			// position is given by regular name
+			//if (specs.indexOf('center') || specs.indexOf('middle')) {
+			self.pivot.x = self.width() / 2;
+			self.pivot.y = self.height() / 2;
+			//}
+
+			if (specs.indexOf('top') !== -1) {
+				self.pivot.y = 0;
+			}
+			else if (specs.indexOf('bottom') !== -1) {
+				self.pivot.y = self.height();
+			}
+
+			if (specs.indexOf('left') !== -1) {
+				self.pivot.x = 0;
+			}
+			else if(specs.indexOf('right') !== -1) {
+				self.pivot.x = self.width();
+			}
+		}
+		else if (typeof specs === 'object') {
+			if ('x' in specs) {
+				self.pivot.x = specs.x;
+			}
+			if ('y' in specs) {
+				self.pivot.y = specs.y;
+			}
+		}
+
+		return self;
+	}
 
 	//
 	// add sprite animation action
@@ -191,19 +240,16 @@ Engine.Sprite = function (canvas, img)
 				}
 			}
 
-			_ctx.drawImage(self.img, act.sx + act.width * act.currFrame, act.sy, act.width, act.height,
-				self.x, self.y, act.width * self.scale, act.height * self.scale);
+			//_ctx.drawImage(self.img, act.sx + act.width * act.currFrame, act.sy, act.width, act.height,
+			//	self.x, self.y, act.width * self.scale, act.height * self.scale);
 
-			/*
-			this._ctx.strokeStyle = "#ffffff";
-			this._ctx.beginPath();
-			this._ctx.arc(
-				this.x + act.width * this.scale / 2, this.y + act.height * this.scale / 2,
-				act.width * this.scale / 2,
-				0, Math.PI*2, true
-			);
-			this._ctx.stroke();
-			this._ctx.closePath(); */
+			_ctx.save();
+			_ctx.translate(self.x,self.y);
+			_ctx.rotate(self.rot);
+
+			_ctx.drawImage(self.img, act.sx + act.width * act.currFrame, act.sy, act.width, act.height,
+				-this.pivot.x, -this.pivot.y, act.width * self.scale, act.height * self.scale);
+			_ctx.restore();
 		}
 		else console.log("Engine.Sprite.loop(): No such action!");
 

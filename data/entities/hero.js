@@ -2,7 +2,7 @@
 // All sprite, collision, physics data for hero ship
 //
 
-Engine.EntityEx.load({
+Engine.Entity.load({
 	name: 'hero',
 
 	// rotation points

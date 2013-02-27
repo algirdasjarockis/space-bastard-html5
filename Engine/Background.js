@@ -85,7 +85,7 @@ Engine.Background = function(canvas)
 				src.imgi = tailSrc.imgi;
 				tailSrc.imgi = Engine.Util.random(0, len - 1);
 
-				console.log(tailSrc.imgi, src.imgi);
+				//console.log(tailSrc.imgi, src.imgi);
             },
 
 			types = {
