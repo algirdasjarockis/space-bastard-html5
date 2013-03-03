@@ -36,6 +36,9 @@ Engine.Resources.SpriteSheet = (function(){
 				if (spriteObj[spriteName].skip) {
 					_sprites[spriteName].skip = spriteObj[spriteName].skip;
 				}
+				
+				// get some defined default values
+				var defaults = spriteObj[spriteName].defaults || {};
 
 				// iterate actions property
 				var actionObj = spriteObj[spriteName].actions;
@@ -46,12 +49,13 @@ Engine.Resources.SpriteSheet = (function(){
 						_sprites[spriteName].addAction(actionName, {
 							name: actionName,
 							currFrame: 0,
-							totalFrames: act.fc,
+							totalFrames: defaults.fc || act.fc,
+							alpha: defaults.alpha || act.alpha || 1.0,
 							sx: act.x,
 							sy: act.y,
-							width: act.w,
-							height: act.h,
-							repeat: act.repeat,
+							width: defaults.w || act.w,
+							height: defaults.h || act.h,
+							repeat: defaults.repeat || act.repeat,
 							repeated: 0
 						});
 					}

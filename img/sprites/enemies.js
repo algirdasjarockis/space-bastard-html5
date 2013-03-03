@@ -26,6 +26,7 @@ Engine.Resources.SpriteSheet({
 		enemy3: {
 			actions: {
 				main: {
+					alpha: 0.75,
 					x: 74, y: 29,
 					w: 24, h: 24,
 					fc: 3,
@@ -108,14 +109,3 @@ Engine.Resources.SpriteSheet({
         }
 	}
 });
-
-/*
-enemy6
-0 109 144 148 3
-enemy7
-0 147 285 206 3
-bomb1
-145 104 291 141 3
-boss1
-287 45 441 196 1
- */

@@ -4,6 +4,9 @@ Engine.Resources.SpriteSheet({
 	path: "img/sprites/hero.png",
 	sprites: {
 		hero: {
+			defaults: {
+				alpha: 1
+			},
 			actions: {
 				main: {
 					x: 0,

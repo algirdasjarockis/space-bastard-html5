@@ -7,7 +7,7 @@
 //
 Engine.Sprite = function (canvas, img)
 {
-	var self = this;
+    var self = this;
 
 	var _canvas = canvas,
 		_ctx = null,
@@ -29,6 +29,12 @@ Engine.Sprite = function (canvas, img)
 	this.x = 0;
 	this.y = 0;
 
+	// alpha value
+	this.alpha = 1.0;
+
+	// composition
+	this.composition = null;
+
 	// pivot coordinates (local to sprite rectangle)
 	this.pivot = {x: 0, y: 0};
 
@@ -36,7 +42,8 @@ Engine.Sprite = function (canvas, img)
 	this.rot = 0;
 
 	this.scale = 1.0;
-	// how much skip frames
+
+	// how many frames should be skipped in playing animation (it sets speed yet)
 	this.skip = 5;
 
 	// current active action
@@ -240,15 +247,14 @@ Engine.Sprite = function (canvas, img)
 				}
 			}
 
-			//_ctx.drawImage(self.img, act.sx + act.width * act.currFrame, act.sy, act.width, act.height,
-			//	self.x, self.y, act.width * self.scale, act.height * self.scale);
-
 			_ctx.save();
+			_ctx.globalAlpha = act.alpha || self.alpha;
+			_ctx.globalCompositeOperation = self.composition;
 			_ctx.translate(self.x,self.y);
 			_ctx.rotate(self.rot);
 
 			_ctx.drawImage(self.img, act.sx + act.width * act.currFrame, act.sy, act.width, act.height,
-				-this.pivot.x, -this.pivot.y, act.width * self.scale, act.height * self.scale);
+				-self.pivot.x, -self.pivot.y, act.width * self.scale, act.height * self.scale);
 			_ctx.restore();
 		}
 		else console.log("Engine.Sprite.loop(): No such action!");
